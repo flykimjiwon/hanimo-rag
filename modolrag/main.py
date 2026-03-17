@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
 from modolrag.api.middleware import setup_middleware
-from modolrag.api import ingest, search, graph, admin
+from modolrag.api import ingest, search, graph, admin, collections
 
 tags_metadata = [
     {
@@ -23,6 +23,10 @@ tags_metadata = [
     {
         "name": "admin",
         "description": "System administration. Health checks, configuration management, and runtime settings.",
+    },
+    {
+        "name": "collections",
+        "description": "Document collections. Group documents into searchable sets — search specific collections instead of all documents.",
     },
 ]
 
@@ -60,6 +64,7 @@ app.include_router(admin.router)
 app.include_router(ingest.router)
 app.include_router(search.router)
 app.include_router(graph.router)
+app.include_router(collections.router)
 
 # Mount dashboard static files if they exist
 static_dir = Path(__file__).parent / "static"

@@ -100,6 +100,28 @@ CREATE TABLE IF NOT EXISTS modolrag_settings (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- 7. modolrag_collections
+-- Document sets for scoped search (e.g., "Product Docs", "HR Policy")
+CREATE TABLE IF NOT EXISTS modolrag_collections (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE,
+    description TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 8. modolrag_collection_documents
+-- Junction table: which documents belong to which collection
+CREATE TABLE IF NOT EXISTS modolrag_collection_documents (
+    collection_id UUID NOT NULL REFERENCES modolrag_collections(id) ON DELETE CASCADE,
+    document_id UUID NOT NULL REFERENCES modolrag_documents(id) ON DELETE CASCADE,
+    added_at TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (collection_id, document_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_colldocs_collection ON modolrag_collection_documents(collection_id);
+CREATE INDEX IF NOT EXISTS idx_colldocs_document ON modolrag_collection_documents(document_id);
+
 -- Indexes for performance optimization
 
 -- Vector similarity search on chunks

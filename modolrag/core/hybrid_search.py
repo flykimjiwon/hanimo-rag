@@ -60,6 +60,7 @@ async def hybrid_search(
     vector_weight: float = 1.0,
     fts_weight: float = 1.0,
     graph_weight: float = 0.8,
+    document_ids: list[str] | None = None,
 ) -> list[SearchResult]:
     """Execute hybrid search across vector, FTS, and graph.
 
@@ -75,19 +76,20 @@ async def hybrid_search(
     if mode in ("vector", "hybrid"):
         vector_results = await search_similar(
             query_embedding=query_embedding,
-            top_k=top_k * 2,  # Over-fetch for fusion
-            threshold=0.0,  # Let RRF handle ranking
+            top_k=top_k * 2,
+            threshold=0.0,
+            document_ids=document_ids,
         )
         for r in vector_results:
             r["match_type"] = "vector"
         if vector_results:
             results_lists.append(vector_results)
 
-    # 2. Full-text search
     if mode in ("fts", "hybrid"):
         fts_results = await search_fts(
             query_text=query_text,
             top_k=top_k * 2,
+            document_ids=document_ids,
         )
         for r in fts_results:
             r["match_type"] = "fts"

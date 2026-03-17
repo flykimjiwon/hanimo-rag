@@ -27,10 +27,20 @@ export const api = {
     return fetch(`${API_BASE}/ingest`, { method: 'POST', headers, body: form }).then(r => r.json())
   },
   deleteDocument: (id: string) => apiFetch(`/documents/${id}`, { method: 'DELETE' }),
-  search: (query: string, mode: string, topK: number) =>
-    apiFetch('/search', { method: 'POST', body: JSON.stringify({ query, mode, top_k: topK }) }),
+  search: (query: string, mode: string, topK: number, collectionId?: string) =>
+    apiFetch('/search', { method: 'POST', body: JSON.stringify({ query, mode, top_k: topK, collection_id: collectionId || null }) }),
   getGraph: (ns = 'default') => apiFetch(`/graph?namespace=${ns}`),
   getSettings: () => apiFetch('/settings'),
   updateSettings: (data: Record<string, unknown>) =>
     apiFetch('/settings', { method: 'PUT', body: JSON.stringify(data) }),
+
+  getCollections: () => apiFetch('/collections'),
+  getCollection: (id: string) => apiFetch(`/collections/${id}`),
+  createCollection: (name: string, description = '') =>
+    apiFetch('/collections', { method: 'POST', body: JSON.stringify({ name, description }) }),
+  deleteCollection: (id: string) => apiFetch(`/collections/${id}`, { method: 'DELETE' }),
+  addDocsToCollection: (collId: string, docIds: string[]) =>
+    apiFetch(`/collections/${collId}/documents`, { method: 'POST', body: JSON.stringify({ document_ids: docIds }) }),
+  removeDocsFromCollection: (collId: string, docIds: string[]) =>
+    apiFetch(`/collections/${collId}/documents`, { method: 'DELETE', body: JSON.stringify({ document_ids: docIds }) }),
 }

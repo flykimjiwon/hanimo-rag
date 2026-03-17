@@ -1,22 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { api } from '../api'
 
 interface Result { chunk_id: string; content: string; score: number; match_type: string; file_name: string }
+interface Collection { id: string; name: string; document_count: number }
 
 export default function Search() {
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState('hybrid')
   const [topK, setTopK] = useState(10)
+  const [collectionId, setCollectionId] = useState<string>('')
+  const [collections, setCollections] = useState<Collection[]>([])
   const [results, setResults] = useState<Result[]>([])
   const [loading, setLoading] = useState(false)
   const [elapsed, setElapsed] = useState(0)
+
+  useEffect(() => { api.getCollections().then(d => setCollections(d.collections || [])).catch(() => {}) }, [])
 
   const onSearch = async () => {
     if (!query.trim()) return
     setLoading(true)
     const t0 = Date.now()
     try {
-      const data = await api.search(query, mode, topK)
+      const data = await api.search(query, mode, topK, collectionId || undefined)
       setResults(data.results || [])
       setElapsed(Date.now() - t0)
     } finally { setLoading(false) }
@@ -31,6 +36,10 @@ export default function Search() {
         <select value={mode} onChange={e => setMode(e.target.value)} className="px-3 py-2 border rounded-md text-sm">
           <option value="hybrid">Hybrid</option><option value="vector">Vector</option>
           <option value="fts">FTS</option><option value="graph">Graph</option>
+        </select>
+        <select value={collectionId} onChange={e => setCollectionId(e.target.value)} className="px-3 py-2 border rounded-md text-sm">
+          <option value="">All Documents</option>
+          {collections.map(c => <option key={c.id} value={c.id}>{c.name} ({c.document_count})</option>)}
         </select>
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <span>Top-K: {topK}</span>

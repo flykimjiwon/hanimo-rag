@@ -44,24 +44,41 @@ async def search_similar(
     query_embedding: list[float],
     top_k: int = 20,
     threshold: float = 0.7,
+    document_ids: list[str] | None = None,
 ) -> list[dict]:
     """Search for similar chunks using cosine distance. Returns ranked results."""
     embedding_str = _format_halfvec(query_embedding)
 
-    rows = await fetch(
-        """
-        SELECT
-            c.id, c.document_id, c.content, c.chunk_index, c.metadata,
-            1 - (c.embedding <=> $1::halfvec) AS similarity,
-            d.file_name, d.original_name
-        FROM modolrag_document_chunks c
-        JOIN modolrag_documents d ON c.document_id = d.id
-        WHERE c.embedding IS NOT NULL
-        ORDER BY c.embedding <=> $1::halfvec
-        LIMIT $2
-        """,
-        embedding_str, top_k
-    )
+    if document_ids:
+        rows = await fetch(
+            """
+            SELECT
+                c.id, c.document_id, c.content, c.chunk_index, c.metadata,
+                1 - (c.embedding <=> $1::halfvec) AS similarity,
+                d.file_name, d.original_name
+            FROM modolrag_document_chunks c
+            JOIN modolrag_documents d ON c.document_id = d.id
+            WHERE c.embedding IS NOT NULL AND c.document_id = ANY($3::uuid[])
+            ORDER BY c.embedding <=> $1::halfvec
+            LIMIT $2
+            """,
+            embedding_str, top_k, document_ids
+        )
+    else:
+        rows = await fetch(
+            """
+            SELECT
+                c.id, c.document_id, c.content, c.chunk_index, c.metadata,
+                1 - (c.embedding <=> $1::halfvec) AS similarity,
+                d.file_name, d.original_name
+            FROM modolrag_document_chunks c
+            JOIN modolrag_documents d ON c.document_id = d.id
+            WHERE c.embedding IS NOT NULL
+            ORDER BY c.embedding <=> $1::halfvec
+            LIMIT $2
+            """,
+            embedding_str, top_k
+        )
 
     results = []
     for row in rows:

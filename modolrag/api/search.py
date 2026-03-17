@@ -12,8 +12,9 @@ class SearchRequest(BaseModel):
     top_k: int = Field(10, ge=1, le=50, description="Number of results to return")
     mode: str = Field("hybrid", description="Search mode: vector, fts, graph, hybrid")
     namespace: str = Field("default", description="Graph namespace for graph-enhanced search")
+    collection_id: str | None = Field(None, description="Limit search to a specific collection. If None, searches all documents.")
 
-    model_config = {"json_schema_extra": {"example": {"query": "How does authentication work?", "top_k": 5, "mode": "hybrid"}}}
+    model_config = {"json_schema_extra": {"example": {"query": "How does authentication work?", "top_k": 5, "mode": "hybrid", "collection_id": None}}}
 
 
 class SearchResultItem(BaseModel):
@@ -29,6 +30,7 @@ class SearchResponse(BaseModel):
     results: list[SearchResultItem]
     query: str
     mode: str
+    collection_id: str | None = None
     count: int
 
 
@@ -48,12 +50,25 @@ async def search(req: SearchRequest, _: str = Depends(require_api_key)):
     embedder = get_embedder()
     query_embedding = await embedder.embed(req.query)
 
+    # Resolve collection → document IDs
+    doc_ids: list[str] | None = None
+    if req.collection_id:
+        from modolrag.db import fetch as db_fetch
+        rows = await db_fetch(
+            "SELECT document_id FROM modolrag_collection_documents WHERE collection_id = $1::uuid",
+            req.collection_id,
+        )
+        doc_ids = [str(r["document_id"]) for r in rows]
+        if not doc_ids:
+            return {"results": [], "query": req.query, "mode": req.mode, "collection_id": req.collection_id, "count": 0}
+
     results = await hybrid_search(
         query_text=req.query,
         query_embedding=query_embedding,
         top_k=req.top_k,
         mode=req.mode,
         namespace=req.namespace,
+        document_ids=doc_ids,
     )
 
     return {
@@ -70,5 +85,6 @@ async def search(req: SearchRequest, _: str = Depends(require_api_key)):
         ],
         "query": req.query,
         "mode": req.mode,
+        "collection_id": req.collection_id,
         "count": len(results),
     }
