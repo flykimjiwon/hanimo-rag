@@ -16,6 +16,201 @@ modolrag serve --db postgresql://localhost:5439/modolrag
 
 ---
 
+## 🤖 AI Setup Guide — 이 지침을 복사해 AI한테 그대로 시키세요
+
+> 아래 내용을 **ChatGPT, Claude, Cursor, Copilot 등** AI에게 그대로 붙여넣으면 ModolRAG를 자동으로 설치·실행합니다.
+
+<details>
+<summary><b>📋 전체 설치 지침 복사하기 (클릭해서 펼치세요)</b></summary>
+
+```
+아래 지침대로 ModolRAG를 설치하고 실행해줘. 순서대로 하나씩 진행해.
+
+## 1단계: 사전 요구사항 확인
+
+필요한 것:
+- macOS / Linux (Windows는 WSL2 사용)
+- Python 3.11+ (확인: python3 --version)
+- Docker Desktop (확인: docker --version)
+- Ollama (확인: ollama --version)
+- Git (확인: git --version)
+
+없는 것이 있으면 먼저 설치해줘:
+- Python: brew install python@3.11
+- Docker: brew install --cask docker
+- Ollama: brew install ollama
+- Git: brew install git
+
+pip이 안 되면:
+  ln -sf $(which pip3.11 || which pip3) /opt/homebrew/bin/pip
+  ln -sf $(which python3.11 || which python3) /opt/homebrew/bin/python
+
+## 2단계: 프로젝트 클론 및 설치
+
+git clone https://github.com/modolai/ModolRAG.git
+cd ModolRAG
+pip install -e ".[dev]"
+
+설치 확인:
+  python -c "import modolrag; print(modolrag.__version__)"
+  # → 0.1.0 이 출력되어야 함
+  modolrag --help
+  # → serve, init-db, ingest 커맨드가 보여야 함
+
+## 3단계: Ollama 임베딩 모델 설치
+
+ollama serve &    # 이미 실행 중이면 생략
+ollama pull nomic-embed-text
+
+확인:
+  ollama list | grep nomic-embed-text
+  curl http://localhost:11434/api/tags
+  # → 모델 목록에 nomic-embed-text 있어야 함
+
+## 4단계: 원커맨드 실행
+
+chmod +x start.sh stop.sh
+./start.sh
+
+이 스크립트가 자동으로:
+1. Docker Desktop 실행 확인 (안 되면 자동 시작)
+2. Ollama 실행 확인 (안 되면 자동 시작)
+3. nomic-embed-text 모델 확인 (없으면 자동 다운로드)
+4. PostgreSQL + ModolRAG Docker 빌드 및 실행
+5. 헬스체크 통과될 때까지 대기
+
+성공하면 이렇게 출력됨:
+  📊 Dashboard:    http://localhost:8009/dashboard
+  📖 Swagger UI:   http://localhost:8009/docs
+  📋 ReDoc:        http://localhost:8009/redoc
+  🐘 PostgreSQL:   localhost:5439
+  🦙 Ollama:       localhost:11434
+
+## 5단계: 동작 확인
+
+# 헬스체크
+curl http://localhost:8009/health
+# → {"status":"ok","version":"0.1.0",...}
+
+# 문서 업로드
+echo "ModolRAG는 PostgreSQL 기반 RAG 엔진입니다." > /tmp/test.txt
+curl -X POST http://localhost:8009/api/ingest -F "file=@/tmp/test.txt"
+# → {"document_id":"uuid","status":"processing","file_name":"test.txt"}
+
+# 10초 대기 (임베딩 처리)
+sleep 10
+
+# 문서 상태 확인
+curl http://localhost:8009/api/documents
+# → status가 "vectorized"이면 성공
+
+# 검색 테스트
+curl -X POST http://localhost:8009/api/search \
+  -H "Content-Type: application/json" \
+  -d '{"query":"RAG 엔진","top_k":3,"mode":"hybrid"}'
+# → results에 업로드한 문서가 나와야 함
+
+# 컬렉션 생성
+curl -X POST http://localhost:8009/api/collections \
+  -H "Content-Type: application/json" \
+  -d '{"name":"테스트","description":"테스트 컬렉션"}'
+# → {"id":"uuid","name":"테스트",...}
+
+## 6단계: 테스트 실행
+
+cd ModolRAG
+bash tests/run_all.sh
+# → 45 pytest 통과 + 5 API 테스트 통과
+
+## 7단계: 중지
+
+./stop.sh
+# 데이터는 Docker 볼륨에 보존됨. 재시작: ./start.sh
+
+## 포트 구성
+- ModolRAG API + Dashboard: 8009
+- PostgreSQL: 5439
+- Ollama: 11434
+
+## 환경변수 (.env 파일에 작성 가능)
+POSTGRES_PASSWORD=modolrag         # DB 비밀번호
+PG_PORT=5439                       # PostgreSQL 포트
+MODOLRAG_PORT=8009                 # API 서버 포트
+MODOLRAG_API_KEYS=                 # API 키 (빈값=인증없음)
+MODOLRAG_EMBEDDING_PROVIDER=ollama # ollama 또는 openai
+MODOLRAG_EMBEDDING_MODEL=nomic-embed-text  # 임베딩 모델
+MODOLRAG_OLLAMA_BASE_URL=http://localhost:11434  # Ollama URL
+MODOLRAG_OPENAI_API_KEY=           # OpenAI 쓸 경우만
+MODOLRAG_CHUNK_SIZE=512            # 청크 크기 (128-4096)
+MODOLRAG_CHUNK_OVERLAP=51         # 청크 오버랩 (0-512)
+MODOLRAG_SIMILARITY_TOP_K=5       # 검색 결과 수 (1-50)
+MODOLRAG_SIMILARITY_THRESHOLD=0.7 # 유사도 임계값 (0.0-1.0)
+
+## OpenAI 사용 시 (Ollama 대신)
+MODOLRAG_EMBEDDING_PROVIDER=openai
+MODOLRAG_OPENAI_API_KEY=sk-your-key-here
+MODOLRAG_EMBEDDING_MODEL=text-embedding-3-small
+# 주의: schema.sql의 halfvec(768)을 halfvec(1536)으로 변경 필요
+
+## API 엔드포인트 (16개)
+GET  /health                                # 헬스체크 (인증 불필요)
+POST /api/ingest                            # 문서 업로드 (multipart)
+GET  /api/documents                         # 문서 목록
+GET  /api/documents/{id}                    # 문서 상세
+DELETE /api/documents/{id}                  # 문서 삭제
+POST /api/search                            # 하이브리드 검색
+POST /api/collections                       # 컬렉션 생성
+GET  /api/collections                       # 컬렉션 목록
+GET  /api/collections/{id}                  # 컬렉션 상세
+DELETE /api/collections/{id}                # 컬렉션 삭제
+POST /api/collections/{id}/documents        # 문서 추가
+DELETE /api/collections/{id}/documents      # 문서 제거
+GET  /api/graph                             # 지식 그래프
+GET  /api/graph/node/{id}                   # 노드 상세
+GET  /api/settings                          # 설정 조회
+PUT  /api/settings                          # 설정 수정
+
+## 검색 모드
+- hybrid (기본): 벡터 + 키워드 + 그래프 → RRF 융합. 최고 품질
+- vector: 의미 유사도 검색만
+- fts: 키워드 매칭만
+- graph: 지식 그래프 탐색만
+
+## 컬렉션 사용법 (문서 세트별 검색)
+1. 문서 업로드: POST /api/ingest
+2. 컬렉션 생성: POST /api/collections {"name":"이름"}
+3. 문서 할당: POST /api/collections/{id}/documents {"document_ids":["doc-uuid"]}
+4. 스코프 검색: POST /api/search {"query":"질문","collection_id":"coll-uuid"}
+   → 해당 컬렉션 문서만 검색됨
+
+## 대시보드 (http://localhost:8009/dashboard)
+- 📄 문서 관리: 업로드, 목록, 상태 확인, 삭제
+- 📚 컬렉션: 생성, 문서 할당/제거
+- 🔍 검색: 쿼리 테스트, 모드 선택, 컬렉션 필터
+- 🕸️ 그래프: 지식 그래프 시각화
+- ⚙️ 설정: 청크 크기, 임베딩 모델 등
+- 한국어/영어 토글, 다크모드 토글 지원
+
+## 기술 스택
+- Python 3.11 + FastAPI + Uvicorn
+- PostgreSQL 15 + pgvector (벡터 검색) + tsvector (전문 검색)
+- asyncpg (DB 드라이버) + httpx (HTTP 클라이언트)
+- React 19 + TypeScript + Vite + Tailwind CSS (대시보드)
+- Docker + docker-compose (배포)
+- Ollama nomic-embed-text 768d (기본 임베딩)
+
+## 트러블슈팅
+- "pip: command not found" → ln -sf $(which pip3.11) /opt/homebrew/bin/pip
+- "Docker not running" → open -a Docker 후 30초 대기
+- "Ollama connection refused" → ollama serve & 실행
+- "halfvec dimension mismatch" → schema.sql의 768을 모델 차원에 맞게 변경
+- 빌드 에러 "peer dep conflict" → npm ci --legacy-peer-deps (Dockerfile에 이미 적용됨)
+```
+
+</details>
+
+---
+
 ## Table of Contents
 
 - [Tech Stack](#tech-stack)
