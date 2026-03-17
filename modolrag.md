@@ -1407,6 +1407,42 @@ curl http://localhost:8000/health  # Expected: 200, {"status": "ok"}
 
 > 모든 작업 과정을 누적 기록. 최신 항목이 위에 위치.
 
+### 2026-03-17 — 대시보드 다국어 + 다크모드 + 리디자인 (v0.8)
+
+**배경**: 대시보드 한국어 UI, 다크모드, 디자인 개선 요구. 한/영 토글 + 라이트/다크 토글 지원.
+
+**변경 사항**:
+
+1. **i18n 시스템** (`src/i18n.tsx`)
+   - 50+ 번역 키 (한국어/영어)
+   - React Context 기반 (외부 라이브러리 없음)
+   - 기본 언어: 한국어, EN/KO 토글 버튼
+   - localStorage에 언어 설정 영구 저장
+
+2. **다크모드** (`src/theme.tsx`)
+   - Tailwind CSS `dark:` 클래스 전략
+   - `<html class="dark">` 토글
+   - 🌙 Dark / ☀️ Light 토글 버튼
+   - localStorage에 테마 설정 영구 저장
+
+3. **디자인 개선**
+   - 폰트: Pretendard Variable (한국어+영어 최적화, CDN)
+   - 컬러 팔레트: slate(라이트) / zinc(다크) / indigo(액센트)
+   - 사이드바: 네비게이션 + API 링크 + 언어/테마 토글
+   - 카드: rounded-xl, 섀도우, hover 트랜지션
+   - 테이블: 상태 배지 다크모드 대응
+   - 인풋: focus:ring-2 focus:ring-indigo-500
+
+4. **적용된 페이지** (6개 전체)
+   - 📄 문서 관리 / Documents
+   - 📚 컬렉션 / Collections
+   - 🔍 검색 / Search
+   - 🕸️ 지식 그래프 / Knowledge Graph
+   - ⚙️ 설정 / Settings
+   - 사이드바 하단: Swagger + ReDoc 링크
+
+---
+
 ### 2026-03-17 — README 전면 재작성 (v0.7)
 
 **배경**: 비개발자도 이해할 수 있는 사용 가이드, 기술 스택 상세, API 문서 보는 방법, Swagger 활용 가이드 등을 포함한 종합 README 요구.
