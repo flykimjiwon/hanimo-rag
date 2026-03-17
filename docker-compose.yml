@@ -1,12 +1,13 @@
 services:
+  # PostgreSQL with pgvector extension
   postgres:
     image: pgvector/pgvector:pg15
     environment:
       POSTGRES_DB: modolrag
       POSTGRES_USER: modolrag
-      POSTGRES_PASSWORD: modolrag
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-modolrag}
     ports:
-      - "5432:5432"
+      - "${PG_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -14,20 +15,58 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
+  # Ollama for local embeddings (optional — remove if using OpenAI)
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    # Uncomment for GPU support:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ModolRAG server
   modolrag:
     build: .
     ports:
-      - "8000:8000"
+      - "${MODOLRAG_PORT:-8000}:8000"
     environment:
-      MODOLRAG_POSTGRES_URI: postgresql://modolrag:modolrag@postgres:5432/modolrag
-      MODOLRAG_API_KEYS: ""
+      MODOLRAG_POSTGRES_URI: postgresql://modolrag:${POSTGRES_PASSWORD:-modolrag}@postgres:5432/modolrag
+      MODOLRAG_API_KEYS: ${MODOLRAG_API_KEYS:-}
+      MODOLRAG_EMBEDDING_PROVIDER: ${MODOLRAG_EMBEDDING_PROVIDER:-ollama}
+      MODOLRAG_EMBEDDING_MODEL: ${MODOLRAG_EMBEDDING_MODEL:-nomic-embed-text}
+      MODOLRAG_OLLAMA_BASE_URL: http://ollama:11434
+      MODOLRAG_OPENAI_API_KEY: ${MODOLRAG_OPENAI_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
+      ollama:
+        condition: service_healthy
     command: >
-      sh -c "python -c 'import asyncio; from modolrag.db import init_schema; asyncio.run(init_schema())' && 
+      sh -c "python -c 'import asyncio; from modolrag.db import init_schema; asyncio.run(init_schema())' &&
              uvicorn modolrag.main:app --host 0.0.0.0 --port 8000"
+    restart: unless-stopped
 
 volumes:
   pgdata:
+  ollama_data:
+
+# Usage:
+#   docker compose up -d                          # Start all services
+#   docker compose up -d postgres modolrag        # Without Ollama (use OpenAI)
+#   docker compose logs -f modolrag               # View logs
+#   docker compose exec ollama ollama pull nomic-embed-text  # Download embedding model

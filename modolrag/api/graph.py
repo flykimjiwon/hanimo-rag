@@ -1,22 +1,36 @@
 """Graph data endpoints."""
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from modolrag.api.auth import require_api_key
 
 router = APIRouter(prefix="/api", tags=["graph"])
 
 
-@router.get("/graph")
-async def get_graph(namespace: str = "default", _: str = Depends(require_api_key)):
-    """Get all graph nodes and edges for visualization."""
+@router.get("/graph", summary="Get knowledge graph")
+async def get_graph(
+    namespace: str = Query("default", description="Graph namespace to query"),
+    _: str = Depends(require_api_key),
+):
+    """Get all graph nodes and edges for visualization.
+    
+    Returns the complete knowledge graph structure. Use with a graph visualization library
+    like react-force-graph or d3-force.
+    
+    **Node types:** person, org, concept, location, event, document  
+    **Edge properties:** relation_type, weight (higher = stronger relationship)
+    """
     from modolrag.core.graph_store import get_graph_data
     data = await get_graph_data(namespace=namespace)
     return data
 
 
-@router.get("/graph/node/{node_id}")
-async def get_node(node_id: str, namespace: str = "default", _: str = Depends(require_api_key)):
-    """Get node details with neighbors."""
+@router.get("/graph/node/{node_id}", summary="Get node details")
+async def get_node(
+    node_id: str,
+    namespace: str = Query("default", description="Graph namespace"),
+    _: str = Depends(require_api_key),
+):
+    """Get a single node with its properties and all connected neighbors (1-hop)."""
     from modolrag.core.graph_store import get_neighbors
     from modolrag.db import fetchrow
 

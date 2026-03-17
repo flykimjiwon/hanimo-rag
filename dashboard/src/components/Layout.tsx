@@ -7,6 +7,11 @@ const navItems = [
   { to: '/settings', label: 'Settings', icon: '\u2699\uFE0F' },
 ]
 
+const externalLinks = [
+  { href: '/docs', label: 'API Docs (Swagger)', icon: '\u{1F4D6}' },
+  { href: '/redoc', label: 'API Docs (ReDoc)', icon: '\u{1F4CB}' },
+]
+
 export default function Layout() {
   return (
     <div className="flex h-screen bg-gray-50">
@@ -31,6 +36,21 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
+        <div className="p-2 border-t border-gray-700">
+          <p className="px-3 py-1 text-xs text-gray-500 uppercase tracking-wider">API</p>
+          {externalLinks.map(link => (
+            <a
+              key={link.href}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
+            >
+              <span>{link.icon}</span>
+              <span>{link.label}</span>
+            </a>
+          ))}
+        </div>
         <div className="p-4 border-t border-gray-700 text-xs text-gray-500">v0.1.0</div>
       </aside>
       <main className="flex-1 overflow-y-auto p-6">
