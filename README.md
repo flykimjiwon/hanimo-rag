@@ -94,41 +94,80 @@ curl http://localhost:8000/api/graph \
 
 ---
 
-## Docker Quick Start
+## Quick Start (One Command)
 
 ```bash
 git clone https://github.com/your-org/ModolRAG.git
 cd ModolRAG
-
-# Start everything (PostgreSQL + Ollama + ModolRAG)
-docker compose up -d
-
-# Download embedding model (first time only)
-docker compose exec ollama ollama pull nomic-embed-text
-
-# Verify
-curl http://localhost:8000/health
-# → {"status": "ok", "version": "0.1.0", "docs": "/docs", ...}
+./start.sh
 ```
 
-### Services
+`start.sh` handles everything automatically:
+
+1. Checks local Ollama (starts it if not running)
+2. Downloads embedding model if needed (`nomic-embed-text`)
+3. Builds and starts Docker services (PostgreSQL + ModolRAG)
+4. Waits for health check and prints all URLs
+
+```
+==================================
+  All services running!
+==================================
+
+  📊 Dashboard:    http://localhost:8009/dashboard
+  📖 Swagger UI:   http://localhost:8009/docs
+  📋 ReDoc:        http://localhost:8009/redoc
+  🔍 Health:       http://localhost:8009/health
+  🐘 PostgreSQL:   localhost:5439
+  🦙 Ollama:       localhost:11434
+
+  Stop:   docker compose down
+  Logs:   docker compose logs -f modolrag
+```
+
+### Services & Ports
 
 | Service | Port | Description |
 |---|---|---|
-| **modolrag** | `8000` | RAG API + Dashboard + Swagger |
-| **postgres** | `5432` | PostgreSQL 15 + pgvector |
-| **ollama** | `11434` | Local embedding model |
+| **ModolRAG** | `8009` | FastAPI API + React Dashboard + Swagger |
+| **PostgreSQL** | `5439` | pgvector:pg15 (data persisted in Docker volume) |
+| **Ollama** | `11434` | Local embedding model (runs on host, not Docker) |
 
-### Without Ollama (using OpenAI)
+> Ports are intentionally non-default (8009, 5439) to avoid conflicts with other services.
+> Ollama runs directly on the host machine for GPU access — ModolRAG Docker container connects to it via `host.docker.internal`.
+
+### URLs
+
+| URL | Description |
+|---|---|
+| [`localhost:8009/dashboard`](http://localhost:8009/dashboard) | Admin Dashboard — upload docs, search, graph viz, settings |
+| [`localhost:8009/docs`](http://localhost:8009/docs) | Swagger UI — interactive API testing with live examples |
+| [`localhost:8009/redoc`](http://localhost:8009/redoc) | ReDoc — clean API documentation for reading |
+| [`localhost:8009/health`](http://localhost:8009/health) | Health check — returns version + doc links |
+| [`localhost:8009/openapi.json`](http://localhost:8009/openapi.json) | OpenAPI 3.1 schema — import into Postman, Insomnia |
+
+### Without Docker (pip only)
 
 ```bash
-# Start only PostgreSQL + ModolRAG
-docker compose up -d postgres modolrag
+pip install modolrag
 
-# Configure OpenAI
+# You need a PostgreSQL with pgvector extension running
+modolrag init-db --db postgresql://user:pass@localhost:5439/modolrag
+modolrag serve --port 8009 --db postgresql://user:pass@localhost:5439/modolrag
+```
+
+### Using OpenAI Instead of Ollama
+
+```bash
+# Option 1: Environment variables
 MODOLRAG_EMBEDDING_PROVIDER=openai \
 MODOLRAG_OPENAI_API_KEY=sk-xxx \
-docker compose up -d modolrag
+docker compose up -d
+
+# Option 2: .env file
+echo 'MODOLRAG_EMBEDDING_PROVIDER=openai' >> .env
+echo 'MODOLRAG_OPENAI_API_KEY=sk-xxx' >> .env
+docker compose up -d
 ```
 
 ### Custom Configuration
@@ -138,10 +177,10 @@ Create a `.env` file in the project root:
 ```env
 # Database
 POSTGRES_PASSWORD=your-secure-password
-PG_PORT=5432
+PG_PORT=5439
 
 # ModolRAG
-MODOLRAG_PORT=8000
+MODOLRAG_PORT=8009
 MODOLRAG_API_KEYS=key1,key2
 MODOLRAG_EMBEDDING_PROVIDER=ollama
 MODOLRAG_EMBEDDING_MODEL=nomic-embed-text
@@ -150,15 +189,6 @@ MODOLRAG_EMBEDDING_MODEL=nomic-embed-text
 # MODOLRAG_EMBEDDING_PROVIDER=openai
 # MODOLRAG_OPENAI_API_KEY=sk-xxx
 ```
-
-### URLs
-
-| URL | Description |
-|---|---|
-| `http://localhost:8000/dashboard` | Admin Dashboard (React SPA) |
-| `http://localhost:8000/docs` | Swagger UI (interactive API testing) |
-| `http://localhost:8000/redoc` | ReDoc (API documentation) |
-| `http://localhost:8000/health` | Health check |
 
 ---
 

@@ -1407,6 +1407,44 @@ curl http://localhost:8000/health  # Expected: 200, {"status": "ok"}
 
 > 모든 작업 과정을 누적 기록. 최신 항목이 위에 위치.
 
+### 2026-03-17 — 실행 환경 + 원커맨드 배포 (v0.5)
+
+**배경**: 로컬 환경에서 `pip install modolrag` 실행 불가 (시스템 Python 3.9, pip 미등록). 포트 충돌 방지 필요. 서비스 전체를 한 번에 띄우는 방법 요구.
+
+**변경 사항**:
+
+1. **Python 환경 설정**
+   - `~/.zshrc` 생성: `python → python3.11`, `pip → pip3.11` alias
+   - `/opt/homebrew/bin/pip`, `/opt/homebrew/bin/python` → python3.11 symlink 생성
+   - `pip install modolrag` 동작 확인 ✅
+   - `modolrag --help` CLI 동작 확인 ✅
+
+2. **포트 변경 (충돌 방지)**
+   - PostgreSQL: `5432` → **`5439`**
+   - ModolRAG: `8000` → **`8009`**
+   - Ollama: `11434` (그대로 — 로컬 호스트에서 직접 실행)
+
+3. **`start.sh` 원커맨드 실행 스크립트**
+   - Ollama 상태 확인 → 미실행 시 자동 시작
+   - `nomic-embed-text` 모델 확인 → 미설치 시 자동 다운로드
+   - `docker compose up -d --build` 실행 (PostgreSQL + ModolRAG)
+   - 헬스체크 대기 (최대 60초) → 전체 URL 출력
+   - 실행: `cd ModolRAG && ./start.sh`
+
+4. **docker-compose.yml 변경**
+   - Ollama 컨테이너 제거 → 로컬 Ollama 사용 (`host.docker.internal:11434`)
+   - `extra_hosts: host.docker.internal:host-gateway` 추가
+   - 포트 기본값: 5439, 8009
+
+5. **README 업데이트**
+   - "Quick Start (One Command)" 섹션을 최상위로
+   - `start.sh` 실행 흐름 + 출력 예시
+   - 서비스 & 포트 테이블 (8009, 5439, 11434)
+   - URL 테이블 (dashboard, docs, redoc, health, openapi.json)
+   - pip only / OpenAI 대안 가이드
+
+---
+
 ### 2026-03-17 — Swagger/Docker 보강 (v0.4)
 
 **배경**: API 문서 자동화(Swagger), Docker 인프라, 대시보드 연동 보강 필요.

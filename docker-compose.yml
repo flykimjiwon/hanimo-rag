@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: modolrag
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-modolrag}
     ports:
-      - "${PG_PORT:-5432}:5432"
+      - "${PG_PORT:-5439}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -17,45 +17,24 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # Ollama for local embeddings (optional — remove if using OpenAI)
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    # Uncomment for GPU support:
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
-
   # ModolRAG server
   modolrag:
     build: .
     ports:
-      - "${MODOLRAG_PORT:-8000}:8000"
+      - "${MODOLRAG_PORT:-8009}:8000"
     environment:
       MODOLRAG_POSTGRES_URI: postgresql://modolrag:${POSTGRES_PASSWORD:-modolrag}@postgres:5432/modolrag
       MODOLRAG_API_KEYS: ${MODOLRAG_API_KEYS:-}
       MODOLRAG_EMBEDDING_PROVIDER: ${MODOLRAG_EMBEDDING_PROVIDER:-ollama}
       MODOLRAG_EMBEDDING_MODEL: ${MODOLRAG_EMBEDDING_MODEL:-nomic-embed-text}
-      MODOLRAG_OLLAMA_BASE_URL: http://ollama:11434
+      # host.docker.internal = host machine's localhost (for local Ollama)
+      MODOLRAG_OLLAMA_BASE_URL: http://host.docker.internal:11434
       MODOLRAG_OPENAI_API_KEY: ${MODOLRAG_OPENAI_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
-      ollama:
-        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: >
       sh -c "python -c 'import asyncio; from modolrag.db import init_schema; asyncio.run(init_schema())' &&
              uvicorn modolrag.main:app --host 0.0.0.0 --port 8000"
@@ -63,10 +42,15 @@ services:
 
 volumes:
   pgdata:
-  ollama_data:
 
+# Ports:
+#   PostgreSQL: 5439 (avoids conflict with default 5432)
+#   ModolRAG:   8009 (avoids conflict with default 8000)
+#   Ollama:     uses host machine's Ollama at 11434 (not containerized)
+#
 # Usage:
-#   docker compose up -d                          # Start all services
-#   docker compose up -d postgres modolrag        # Without Ollama (use OpenAI)
+#   ./start.sh                                    # One command to start everything
+#   docker compose up -d                          # Start PostgreSQL + ModolRAG
 #   docker compose logs -f modolrag               # View logs
-#   docker compose exec ollama ollama pull nomic-embed-text  # Download embedding model
+#   docker compose down                           # Stop all
+#   docker compose down -v                        # Stop + delete data
