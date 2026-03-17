@@ -6,6 +6,7 @@ import Documents from './pages/Documents'
 import Collections from './pages/Collections'
 import Search from './pages/Search'
 import Graph from './pages/Graph'
+import Apps from './pages/Apps'
 import Settings from './pages/Settings'
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
               <Route path="documents" element={<Documents />} />
               <Route path="collections" element={<Collections />} />
               <Route path="search" element={<Search />} />
+              <Route path="apps" element={<Apps />} />
               <Route path="graph" element={<Graph />} />
               <Route path="settings" element={<Settings />} />
             </Route>

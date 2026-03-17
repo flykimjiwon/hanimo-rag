@@ -55,6 +55,23 @@ const T = {
   'settings.threshold': { ko: '유사도 임계값', en: 'Threshold' },
   'settings.save': { ko: '저장', en: 'Save' },
   'settings.saved': { ko: '저장됨!', en: 'Saved!' },
+  'nav.apps': { ko: '앱 빌더', en: 'Apps' },
+  'apps.title': { ko: '앱 빌더', en: 'App Builder' },
+  'apps.name': { ko: '앱 이름', en: 'App Name' },
+  'apps.desc': { ko: '설명', en: 'Description' },
+  'apps.prompt': { ko: '시스템 프롬프트', en: 'System Prompt' },
+  'apps.model': { ko: 'LLM 모델', en: 'LLM Model' },
+  'apps.create': { ko: '앱 생성', en: 'Create App' },
+  'apps.empty': { ko: '앱이 없습니다', en: 'No apps yet' },
+  'apps.select': { ko: '앱을 선택하세요', en: 'Select an app' },
+  'apps.endpoint': { ko: 'API 엔드포인트', en: 'API Endpoint' },
+  'apps.test': { ko: '테스트', en: 'Test' },
+  'apps.save': { ko: '저장', en: 'Save' },
+  'apps.saved': { ko: '저장됨', en: 'Saved' },
+  'apps.delete': { ko: '삭제', en: 'Delete' },
+  'apps.confirm': { ko: '정말 삭제하시겠습니까?', en: 'Delete this app?' },
+  'apps.active': { ko: '활성', en: 'Active' },
+  'apps.copy': { ko: '복사됨', en: 'Copied' },
 } as const
 
 type TKey = keyof typeof T

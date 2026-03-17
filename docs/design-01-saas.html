@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ModolRAG - 01 SaaS Standard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        saas: {
+                            bg: '#111111',
+                            app: '#F8FAFC',
+                            sidebar: '#EFF4FB',
+                            active: '#DBEAFE',
+                            border: '#E2E8F0',
+                            text: '#1E293B',
+                            textLight: '#64748B',
+                            primary: '#2563EB',
+                            onPrimary: '#FFFFFF',
+                            accent: '#EA580C',
+                            card: '#FFFFFF',
+                            cardFg: '#1E293B',
+                            muted: '#E9EFF8',
+                            mutedFg: '#64748B',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-saas-bg h-screen flex flex-col items-center justify-center p-4 sm:p-8">
+
+    <!-- Header label -->
+    <div class="w-full max-w-6xl mb-4 text-gray-400 font-medium tracking-wide flex items-center gap-2">
+        <span class="text-gray-500">01</span>
+        <span>·</span>
+        <span class="text-white font-bold">SaaS Standard</span>
+        <span class="text-gray-500">— SaaS 스탠다드</span>
+    </div>
+
+    <!-- App container -->
+    <div class="w-full max-w-6xl h-[80vh] flex bg-saas-app rounded-3xl overflow-hidden shadow-2xl text-saas-text">
+        
+        <!-- Sidebar -->
+        <aside class="w-64 bg-saas-sidebar p-8 flex flex-col border-r border-saas-border">
+            <div class="mb-12">
+                <h1 class="text-2xl font-bold tracking-tight text-saas-primary">ModolRAG</h1>
+            </div>
+            
+            <nav class="flex-1 space-y-2">
+                <button onclick="switchView('documents', this)" class="nav-btn w-full text-left px-5 py-3.5 rounded-xl font-semibold text-saas-primary bg-saas-active transition-colors">
+                    문서 관리
+                </button>
+                <button onclick="switchView('collections', this)" class="nav-btn w-full text-left px-5 py-3.5 rounded-xl font-semibold text-saas-textLight hover:bg-saas-muted/50 transition-colors">
+                    데이터 소스
+                </button>
+                <button onclick="switchView('search', this)" class="nav-btn w-full text-left px-5 py-3.5 rounded-xl font-semibold text-saas-textLight hover:bg-saas-muted/50 transition-colors">
+                    RAG 채팅
+                </button>
+                <button onclick="switchView('graph', this)" class="nav-btn w-full text-left px-5 py-3.5 rounded-xl font-semibold text-saas-textLight hover:bg-saas-muted/50 transition-colors">
+                    인덱싱 모니터
+                </button>
+                <button onclick="switchView('settings', this)" class="nav-btn w-full text-left px-5 py-3.5 rounded-xl font-semibold text-saas-textLight hover:bg-saas-muted/50 transition-colors">
+                    설정
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main content area -->
+        <main class="flex-1 p-10 overflow-y-auto relative">
+            
+            <!-- View 1: Document Management -->
+            <div id="view-documents" class="view-section fade-in block">
+                <h2 class="text-3xl font-bold text-saas-text mb-8">문서 관리</h2>
+                
+                <!-- Upload area -->
+                <div class="border-2 border-dashed border-saas-border bg-white rounded-2xl p-12 flex flex-col items-center justify-center text-saas-textLight mb-8 cursor-pointer hover:border-saas-primary hover:bg-blue-50/30 transition-colors">
+                    <i data-lucide="upload-cloud" class="w-8 h-8 mb-3 text-saas-primary"></i>
+                    <p class="text-lg font-bold mb-1 text-saas-text">파일 업로드</p>
+                    <p class="text-sm">PDF, Markdown, CSV 파일을 드래그하세요</p>
+                </div>
+
+                <!-- File list -->
+                <div class="space-y-4">
+                    <div class="bg-saas-card border border-saas-border rounded-2xl p-5 flex items-center justify-between shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <i data-lucide="file-text" class="text-saas-primary"></i>
+                            <span class="font-medium text-saas-cardFg">제품 가이드.pdf</span>
+                        </div>
+                        <span class="bg-saas-active text-saas-primary px-4 py-1.5 rounded-full text-sm font-bold tracking-wide">준비됨</span>
+                    </div>
+
+                    <div class="bg-saas-card border border-saas-border rounded-2xl p-5 flex items-center justify-between shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <i data-lucide="file-code" class="text-saas-accent"></i>
+                            <span class="font-medium text-saas-cardFg">API 문서.md</span>
+                        </div>
+                        <span class="bg-orange-50 text-saas-accent px-4 py-1.5 rounded-full text-sm font-bold tracking-wide">처리중</span>
+                    </div>
+
+                    <div class="bg-saas-card border border-saas-border rounded-2xl p-5 flex items-center justify-between shadow-sm opacity-60">
+                        <div class="flex items-center gap-4">
+                            <i data-lucide="table" class="text-saas-textLight"></i>
+                            <span class="font-medium text-saas-cardFg">고객_FAQ_데이터.csv</span>
+                        </div>
+                        <span class="bg-saas-muted text-saas-mutedFg px-4 py-1.5 rounded-full text-sm font-bold tracking-wide">대기중</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View 2: Data Source Connection -->
+            <div id="view-collections" class="view-section fade-in hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-3xl font-bold text-saas-text">데이터 소스 연결</h2>
+                    <button class="bg-saas-accent text-saas-onPrimary px-5 py-2 rounded-xl font-bold text-sm hover:bg-[#C2410C] transition-colors">새 소스 추가</button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- Slack Card -->
+                    <div class="bg-saas-card border border-saas-border rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                        <i data-lucide="slack" class="w-12 h-12 text-[#E01E5A] mb-4"></i>
+                        <h3 class="font-bold text-lg mb-1">Slack</h3>
+                        <p class="text-sm text-saas-textLight mb-4">사내 메신저 데이터 연동</p>
+                        <span class="bg-saas-active text-saas-primary px-4 py-1 rounded-full text-xs font-bold">연결됨</span>
+                    </div>
+                    
+                    <!-- Web Crawler Card -->
+                    <div class="bg-saas-card border border-saas-border rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                        <i data-lucide="globe" class="w-12 h-12 text-saas-primary mb-4"></i>
+                        <h3 class="font-bold text-lg mb-1">Web Crawler</h3>
+                        <p class="text-sm text-saas-textLight mb-4">지정된 URL 정기 크롤링</p>
+                        <span class="bg-saas-active text-saas-primary px-4 py-1 rounded-full text-xs font-bold">연결됨</span>
+                    </div>
+
+                    <!-- Notion Card -->
+                    <div class="bg-saas-card border border-saas-border rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                        <i data-lucide="book-open" class="w-12 h-12 text-saas-textLight mb-4"></i>
+                        <h3 class="font-bold text-lg mb-1">Notion</h3>
+                        <p class="text-sm text-saas-textLight mb-4">위키 및 문서 동기화</p>
+                        <span class="bg-saas-muted text-saas-mutedFg px-4 py-1 rounded-full text-xs font-bold">연결 안됨</span>
+                    </div>
+
+                    <!-- Local DB Card -->
+                    <div class="bg-saas-card border border-saas-border rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                        <i data-lucide="database" class="w-12 h-12 text-saas-textLight mb-4"></i>
+                        <h3 class="font-bold text-lg mb-1">PostgreSQL</h3>
+                        <p class="text-sm text-saas-textLight mb-4">정형 데이터 연동</p>
+                        <span class="bg-saas-muted text-saas-mutedFg px-4 py-1 rounded-full text-xs font-bold">연결 안됨</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View 3: RAG Chat -->
+            <div id="view-search" class="view-section fade-in hidden h-full flex flex-col">
+                <h2 class="text-3xl font-bold text-saas-text mb-6">RAG 채팅 & 출처</h2>
+                
+                <div class="flex-1 bg-saas-card border border-saas-border rounded-2xl flex flex-col overflow-hidden shadow-sm">
+                    <!-- Chat history -->
+                    <div class="flex-1 p-6 overflow-y-auto space-y-6">
+                        <!-- User Message -->
+                        <div class="flex justify-end">
+                            <div class="bg-saas-primary text-saas-onPrimary px-5 py-3 rounded-2xl rounded-tr-sm max-w-[80%]">
+                                <p>ModolRAG의 주요 아키텍처는 어떻게 구성되어 있나요?</p>
+                            </div>
+                        </div>
+                        <!-- AI Message -->
+                        <div class="flex justify-start">
+                            <div class="bg-saas-app border border-saas-border text-saas-text px-5 py-4 rounded-2xl rounded-tl-sm max-w-[90%]">
+                                <p class="mb-3">ModolRAG는 주로 다음과 같은 아키텍처로 구성되어 있습니다.</p>
+                                <ul class="list-disc pl-5 mb-4 space-y-1 text-sm">
+                                    <li><strong>FAST API 백엔드:</strong> 고성능 비동기 API 처리</li>
+                                    <li><strong>Vector DB:</strong> 문서 임베딩 저장을 위한 ChromaDB 또는 Pinecone</li>
+                                    <li><strong>LLM 연동:</strong> 답변 생성을 위한 OpenAI 또는 로컬 모델</li>
+                                </ul>
+                                <!-- Source -->
+                                <div class="mt-4 bg-saas-active p-3 rounded-xl border border-blue-200">
+                                    <div class="flex items-center gap-2 mb-2 text-xs font-bold text-saas-primary">
+                                        <i data-lucide="book-marked" class="w-4 h-4"></i> 출처 문서
+                                    </div>
+                                    <div class="text-xs text-saas-text leading-relaxed bg-white/60 p-2 rounded-lg">
+                                        "백엔드 시스템은 <mark class="bg-blue-100 text-saas-primary px-1 rounded">FAST API</mark>를 기반으로 구축되어 빠른 응답성을 보장하며, 
+                                        벡터 데이터베이스로는 <mark class="bg-blue-100 text-saas-primary px-1 rounded">ChromaDB</mark>를 기본 지원합니다." 
+                                        <br><span class="text-saas-textLight mt-1 block">- 제품 가이드.pdf (Page 12)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Input -->
+                    <div class="p-4 bg-saas-app border-t border-saas-border">
+                        <div class="relative">
+                            <input type="text" placeholder="질문을 입력하세요..." class="w-full bg-white border border-saas-border rounded-xl pl-4 pr-12 py-3 focus:outline-none focus:border-saas-primary focus:ring-1 focus:ring-saas-primary transition-all">
+                            <button class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-saas-textLight hover:text-saas-primary hover:bg-saas-active rounded-lg transition-colors">
+                                <i data-lucide="send" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View 4: Indexing Monitor -->
+            <div id="view-graph" class="view-section fade-in hidden">
+                <h2 class="text-3xl font-bold text-saas-text mb-8">인덱싱 모니터</h2>
+                
+                <div class="bg-saas-card border border-saas-border rounded-2xl p-8 shadow-sm mb-6">
+                    <div class="flex justify-between items-end mb-4">
+                        <div>
+                            <p class="text-sm font-bold text-saas-textLight mb-1">Current Job Status</p>
+                            <h3 class="text-2xl font-bold text-saas-text">제품_가이드_통합본.pdf</h3>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full">Active</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="mb-2 flex justify-between text-sm text-saas-text font-medium">
+                        <span>Chunking & Embedding</span>
+                        <span>78%</span>
+                    </div>
+                    <div class="w-full bg-saas-muted rounded-full h-3 mb-8 overflow-hidden">
+                        <div class="bg-saas-primary h-3 rounded-full" style="width: 78%"></div>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-3 gap-4 border-t border-saas-border pt-6">
+                        <div>
+                            <p class="text-xs text-saas-textLight mb-1 uppercase tracking-wider font-bold">Total Chunks</p>
+                            <p class="text-xl font-bold text-saas-text">1,284</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-saas-textLight mb-1 uppercase tracking-wider font-bold">Processing Time</p>
+                            <p class="text-xl font-bold text-saas-text">02:14</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-saas-textLight mb-1 uppercase tracking-wider font-bold">Estimated Left</p>
+                            <p class="text-xl font-bold text-saas-text">00:45</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vector Store status -->
+                <div class="bg-saas-active border border-blue-200 rounded-2xl p-6 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <i data-lucide="layers" class="text-saas-primary w-8 h-8"></i>
+                        <div>
+                            <h4 class="font-bold text-saas-text">Chroma Vector DB</h4>
+                            <p class="text-sm text-saas-textLight">Total Documents: 4,092 | Size: 113.5 MB</p>
+                        </div>
+                    </div>
+                    <button class="px-4 py-2 border border-saas-border rounded-lg text-sm font-bold text-saas-text hover:bg-white transition-colors">관리</button>
+                </div>
+            </div>
+            
+            <!-- View 5: Settings -->
+            <div id="view-settings" class="view-section fade-in hidden">
+                <h2 class="text-3xl font-bold text-saas-text mb-8">시스템 설정</h2>
+                <div class="bg-saas-card border border-saas-border rounded-2xl p-12 text-center shadow-sm">
+                    <i data-lucide="settings" class="w-12 h-12 text-saas-textLight mx-auto mb-4 animate-[spin_4s_linear_infinite]"></i>
+                    <p class="text-saas-textLight font-medium">시스템 및 LLM 파라미터 설정 페이지입니다.</p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Tab switching
+        function switchView(viewId, btnElement) {
+            document.querySelectorAll('.view-section').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('block');
+            });
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-saas-active', 'text-saas-primary');
+                btn.classList.add('text-saas-textLight');
+            });
+
+            const targetView = document.getElementById('view-' + viewId);
+            if (targetView) {
+                targetView.classList.remove('hidden');
+                targetView.classList.add('block');
+            }
+
+            btnElement.classList.remove('text-saas-textLight');
+            btnElement.classList.add('bg-saas-active', 'text-saas-primary');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ModolRAG - Vercel Clean 대시보드</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans KR"', 'sans-serif'],
+                    },
+                    colors: {
+                        vercel: {
+                            bg: '#050505',
+                            app: '#000000',
+                            sidebar: '#0a0a0a',
+                            active: '#171717',
+                            border: '#1a1a1a',
+                            text: '#ededed',
+                            textLight: '#666666',
+                            badge1: '#ededed',
+                            badge2: '#333333',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #222;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #333;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-vercel-bg h-screen flex flex-col items-center justify-center p-4 sm:p-8">
+
+    <!-- 상단 헤더 텍스트 -->
+    <div class="w-full max-w-6xl mb-4 text-gray-400 font-medium tracking-wide flex items-center gap-2">
+        <span class="text-gray-500">33</span>
+        <span>·</span>
+        <span class="text-white font-bold">VERCEL CLEAN</span>
+        <span class="text-gray-500">— 버셀 클린</span>
+    </div>
+
+    <!-- 앱 컨테이너 -->
+    <div class="w-full max-w-6xl h-[80vh] flex bg-vercel-app rounded-3xl overflow-hidden shadow-2xl text-vercel-text border border-[#1a1a1a]">
+        
+        <!-- 사이드바 -->
+        <aside class="w-64 bg-vercel-sidebar p-8 flex flex-col border-r border-[#1a1a1a]">
+            <div class="mb-12">
+                <h1 class="text-xl font-bold text-[#ededed] tracking-[-0.05em]">ModolRAG</h1>
+            </div>
+            
+            <nav class="flex-1 space-y-1">
+                <button onclick="switchView('documents', this)" class="nav-btn w-full text-left px-5 py-3.5 rounded-none rounded-r-lg font-bold text-[#ededed] border-l-2 border-[#ededed] transition-colors">
+                    문서 관리
+                </button>
+                <button onclick="switchView('collections', this)" class="nav-btn w-full text-left px-5 py-3.5 rounded-none rounded-r-lg font-bold text-[#666] border-l-2 border-transparent hover:text-[#999] transition-colors">
+                    데이터 소스
+                </button>
+                <button onclick="switchView('search', this)" class="nav-btn w-full text-left px-5 py-3.5 rounded-none rounded-r-lg font-bold text-[#666] border-l-2 border-transparent hover:text-[#999] transition-colors">
+                    RAG 채팅
+                </button>
+                <button onclick="switchView('graph', this)" class="nav-btn w-full text-left px-5 py-3.5 rounded-none rounded-r-lg font-bold text-[#666] border-l-2 border-transparent hover:text-[#999] transition-colors">
+                    인덱싱 모니터
+                </button>
+                <button onclick="switchView('settings', this)" class="nav-btn w-full text-left px-5 py-3.5 rounded-none rounded-r-lg font-bold text-[#666] border-l-2 border-transparent hover:text-[#999] transition-colors">
+                    설정
+                </button>
+            </nav>
+        </aside>
+
+        <!-- 메인 컨텐츠 영역 -->
+        <main class="flex-1 p-10 overflow-y-auto relative">
+            
+            <!-- 뷰 1: 문서 관리 -->
+            <div id="view-documents" class="view-section fade-in block">
+                <h2 class="text-3xl font-bold text-[#ededed] mb-8 tracking-[-0.03em]">문서 관리</h2>
+                
+                <!-- 업로드 영역 -->
+                <div class="border border-[#333] bg-[#0a0a0a] rounded-xl p-12 flex flex-col items-center justify-center text-[#666] mb-8 cursor-pointer hover:border-[#444] transition-colors">
+                    <i data-lucide="upload-cloud" class="w-8 h-8 mb-3 text-[#444]"></i>
+                    <p class="text-lg font-bold mb-1 text-[#ededed]">파일 업로드</p>
+                    <p class="text-sm">클릭하거나 파일을 드래그하세요</p>
+                </div>
+
+                <!-- 파일 목록 -->
+                <div class="space-y-4">
+                    <div class="bg-[#111] border border-[#222] rounded-xl p-5 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <i data-lucide="file-text" class="text-[#555]"></i>
+                            <span class="font-medium text-[#a0a0a0]">제품 가이드.pdf</span>
+                        </div>
+                        <span class="bg-[#ededed] text-[#000] px-4 py-1.5 rounded-full text-sm font-bold tracking-wide">준비됨</span>
+                    </div>
+
+                    <div class="bg-[#111] border border-[#222] rounded-xl p-5 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <i data-lucide="file-code" class="text-[#555]"></i>
+                            <span class="font-medium text-[#a0a0a0]">API 문서.md</span>
+                        </div>
+                        <span class="bg-[#333] text-[#a0a0a0] px-4 py-1.5 rounded-full text-sm font-bold tracking-wide">처리중</span>
+                    </div>
+
+                    <div class="bg-[#111] border border-[#222] rounded-xl p-5 flex items-center justify-between opacity-60">
+                        <div class="flex items-center gap-4">
+                            <i data-lucide="table" class="text-[#555]"></i>
+                            <span class="font-medium text-[#a0a0a0]">고객_FAQ_데이터.csv</span>
+                        </div>
+                        <span class="bg-[#1a1a1a] text-[#555] px-4 py-1.5 rounded-full text-sm font-bold tracking-wide">대기중</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 뷰 2: 데이터 소스 연결 -->
+            <div id="view-collections" class="view-section fade-in hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-3xl font-bold text-[#ededed] tracking-[-0.03em]">데이터 소스 연결</h2>
+                    <button class="bg-[#ededed] text-[#000] px-5 py-2 rounded-xl font-bold text-sm hover:bg-white transition-colors">새 소스 추가</button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-[#111] border border-[#222] rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-[#333] transition-all cursor-pointer">
+                        <i data-lucide="slack" class="w-12 h-12 text-[#e5a8a8] mb-4"></i>
+                        <h3 class="font-bold text-lg mb-1 text-[#ededed]">Slack</h3>
+                        <p class="text-sm text-vercel-textLight mb-4">사내 메신저 데이터 연동</p>
+                        <span class="bg-[#ededed] text-[#000] px-4 py-1 rounded-full text-xs font-bold">연결됨</span>
+                    </div>
+                    
+                    <div class="bg-[#111] border border-[#222] rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-[#333] transition-all cursor-pointer">
+                        <i data-lucide="globe" class="w-12 h-12 text-[#7a9ec5] mb-4"></i>
+                        <h3 class="font-bold text-lg mb-1 text-[#ededed]">Web Crawler</h3>
+                        <p class="text-sm text-vercel-textLight mb-4">지정된 URL 정기 크롤링</p>
+                        <span class="bg-[#ededed] text-[#000] px-4 py-1 rounded-full text-xs font-bold">연결됨</span>
+                    </div>
+
+                    <div class="bg-[#111] border border-[#222] rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-[#333] transition-all cursor-pointer">
+                        <i data-lucide="book-open" class="w-12 h-12 text-[#6bab80] mb-4"></i>
+                        <h3 class="font-bold text-lg mb-1 text-[#ededed]">Notion</h3>
+                        <p class="text-sm text-vercel-textLight mb-4">위키 및 문서 동기화</p>
+                        <span class="bg-[#222] text-[#666] px-4 py-1 rounded-full text-xs font-bold">연결 안됨</span>
+                    </div>
+
+                    <div class="bg-[#111] border border-[#222] rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-[#333] transition-all cursor-pointer">
+                        <i data-lucide="database" class="w-12 h-12 text-[#555] mb-4"></i>
+                        <h3 class="font-bold text-lg mb-1 text-[#ededed]">PostgreSQL</h3>
+                        <p class="text-sm text-vercel-textLight mb-4">정형 데이터 연동</p>
+                        <span class="bg-[#222] text-[#666] px-4 py-1 rounded-full text-xs font-bold">연결 안됨</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 뷰 3: RAG 채팅 -->
+            <div id="view-search" class="view-section fade-in hidden h-full flex flex-col">
+                <h2 class="text-3xl font-bold text-[#ededed] mb-6 tracking-[-0.03em]">RAG 채팅 & 출처</h2>
+                
+                <div class="flex-1 bg-[#111] border border-[#222] rounded-xl flex flex-col overflow-hidden">
+                    <div class="flex-1 p-6 overflow-y-auto space-y-6">
+                        <!-- User Message -->
+                        <div class="flex justify-end">
+                            <div class="bg-[#ededed] text-[#000] px-5 py-3 rounded-2xl rounded-tr-sm max-w-[80%]">
+                                <p>ModolRAG의 주요 아키텍처는 어떻게 구성되어 있나요?</p>
+                            </div>
+                        </div>
+                        <!-- AI Message -->
+                        <div class="flex justify-start">
+                            <div class="bg-[#0a0a0a] border border-[#222] text-[#a0a0a0] px-5 py-4 rounded-2xl rounded-tl-sm max-w-[90%]">
+                                <p class="mb-3">ModolRAG는 주로 다음과 같은 아키텍처로 구성되어 있습니다.</p>
+                                <ul class="list-disc pl-5 mb-4 space-y-1 text-sm">
+                                    <li><strong class="text-[#ededed]">FAST API 백엔드:</strong> 고성능 비동기 API 처리</li>
+                                    <li><strong class="text-[#ededed]">Vector DB:</strong> 문서 임베딩 저장을 위한 ChromaDB 또는 Pinecone</li>
+                                    <li><strong class="text-[#ededed]">LLM 연동:</strong> 답변 생성을 위한 OpenAI 또는 로컬 모델</li>
+                                </ul>
+                                <div class="mt-4 bg-[#000] p-3 rounded-xl border border-[#1a1a1a]">
+                                    <div class="flex items-center gap-2 mb-2 text-xs font-bold text-[#666]">
+                                        <i data-lucide="book-marked" class="w-4 h-4"></i> 출처 문서
+                                    </div>
+                                    <div class="text-xs text-[#a0a0a0] leading-relaxed bg-[#0a0a0a] p-2 rounded-lg">
+                                        "백엔드 시스템은 <mark class="bg-[#333] text-[#ededed] px-1 rounded">FAST API</mark>를 기반으로 구축되어 빠른 응답성을 보장하며, 
+                                        벡터 데이터베이스로는 <mark class="bg-[#333] text-[#ededed] px-1 rounded">ChromaDB</mark>를 기본 지원합니다." 
+                                        <br><span class="text-[#555] mt-1 block">- 제품 가이드.pdf (Page 12)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-[#0a0a0a] border-t border-[#1a1a1a]">
+                        <div class="relative">
+                            <input type="text" placeholder="질문을 입력하세요..." class="w-full bg-[#000] border border-[#222] rounded-xl pl-4 pr-12 py-3 text-[#ededed] placeholder-[#555] focus:outline-none focus:border-[#444] focus:ring-1 focus:ring-[#444] transition-all">
+                            <button class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-[#555] hover:text-[#ededed] hover:bg-[#222] rounded-lg transition-colors">
+                                <i data-lucide="send" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 뷰 4: 인덱싱 모니터 -->
+            <div id="view-graph" class="view-section fade-in hidden">
+                <h2 class="text-3xl font-bold text-[#ededed] mb-8 tracking-[-0.03em]">인덱싱 모니터</h2>
+                
+                <div class="bg-[#111] border border-[#222] rounded-xl p-8 mb-6">
+                    <div class="flex justify-between items-end mb-4">
+                        <div>
+                            <p class="text-sm font-bold text-[#666] mb-1">Current Job Status</p>
+                            <h3 class="text-2xl font-bold text-[#ededed]">제품_가이드_통합본.pdf</h3>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm font-bold text-green-400 bg-green-400/10 px-3 py-1 rounded-full">Active</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-2 flex justify-between text-sm text-[#a0a0a0] font-medium">
+                        <span>Chunking & Embedding</span>
+                        <span>78%</span>
+                    </div>
+                    <div class="w-full bg-[#222] rounded-full h-3 mb-8 overflow-hidden">
+                        <div class="bg-[#ededed] h-3 rounded-full" style="width: 78%"></div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 border-t border-[#222] pt-6">
+                        <div>
+                            <p class="text-xs text-[#666] mb-1 uppercase tracking-wider font-bold">Total Chunks</p>
+                            <p class="text-xl font-bold text-[#ededed]">1,284</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-[#666] mb-1 uppercase tracking-wider font-bold">Processing Time</p>
+                            <p class="text-xl font-bold text-[#ededed]">02:14</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-[#666] mb-1 uppercase tracking-wider font-bold">Estimated Left</p>
+                            <p class="text-xl font-bold text-[#ededed]">00:45</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-6 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <i data-lucide="layers" class="text-[#555] w-8 h-8"></i>
+                        <div>
+                            <h4 class="font-bold text-[#ededed]">Chroma Vector DB</h4>
+                            <p class="text-sm text-[#666]">Total Documents: 4,092 | Size: 113.5 MB</p>
+                        </div>
+                    </div>
+                    <button class="px-4 py-2 border border-[#333] rounded-lg text-sm font-bold text-[#a0a0a0] hover:bg-[#111] transition-colors">관리</button>
+                </div>
+            </div>
+            
+            <!-- 뷰 5: 설정 -->
+            <div id="view-settings" class="view-section fade-in hidden">
+                <h2 class="text-3xl font-bold text-[#ededed] mb-8 tracking-[-0.03em]">시스템 설정</h2>
+                <div class="bg-[#111] border border-[#222] rounded-xl p-12 text-center">
+                    <i data-lucide="settings" class="w-12 h-12 text-[#333] mx-auto mb-4 animate-[spin_4s_linear_infinite]"></i>
+                    <p class="text-[#666] font-medium">시스템 및 LLM 파라미터 설정 페이지입니다.</p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        function switchView(viewId, btnElement) {
+            document.querySelectorAll('.view-section').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('block');
+            });
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-[#ededed]', 'border-[#ededed]');
+                btn.classList.add('text-[#666]', 'border-transparent');
+            });
+
+            const targetView = document.getElementById('view-' + viewId);
+            if (targetView) {
+                targetView.classList.remove('hidden');
+                targetView.classList.add('block');
+            }
+
+            btnElement.classList.remove('text-[#666]', 'border-transparent');
+            btnElement.classList.add('text-[#ededed]', 'border-[#ededed]');
+        }
+    </script>
+</body>
+</html>

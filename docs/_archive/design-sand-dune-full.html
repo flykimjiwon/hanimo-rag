@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ModolRAG - 사막 모래 베이지 대시보드</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans KR"', 'sans-serif'],
+                        serif: ['"Playfair Display"', 'serif'],
+                    },
+                    colors: {
+                        // 사막 모래 베이지 커스텀 팔레트
+                        dune: {
+                            bg: '#111111',       // 전체 배경 (다크)
+                            app: '#FCF8F2',      // 메인 컨텐츠 배경
+                            sidebar: '#F2E8D5',  // 사이드바 배경
+                            active: '#E5D5BA',   // 활성화된 메뉴 배경
+                            border: '#D8CBB6',   // 테두리 색상
+                            text: '#4A3F35',     // 기본 텍스트 (진한 갈색)
+                            textLight: '#8C7A61',// 보조 텍스트
+                            badge1: '#D4C4A8',   // 뱃지 색상 (준비됨)
+                            badge2: '#C2B296',   // 뱃지 색상 (처리중)
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 커스텀 스크롤바 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D8CBB6;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #C2B296;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-dune-bg h-screen flex flex-col items-center justify-center p-4 sm:p-8">
+
+    <!-- 상단 헤더 텍스트 -->
+    <div class="w-full max-w-6xl mb-4 text-gray-400 font-medium tracking-wide flex items-center gap-2">
+        <span class="text-gray-500">12</span>
+        <span>·</span>
+        <span class="text-white font-bold">SAND DUNE</span>
+        <span class="text-gray-500">— 사막 모래 베이지</span>
+    </div>
+
+    <!-- 앱 컨테이너 -->
+    <div class="w-full max-w-6xl h-[80vh] flex bg-dune-app rounded-3xl overflow-hidden shadow-2xl text-dune-text">
+        
+        <!-- 사이드바 -->
+        <aside class="w-64 bg-dune-sidebar p-8 flex flex-col border-r border-dune-sidebar">
+            <div class="mb-12">
+                <h1 class="font-serif text-3xl font-bold italic text-[#7A6A53]">ModolRAG</h1>
+            </div>
+            
+            <nav class="flex-1 space-y-2">
+                <button onclick="switchView('documents', this)" class="nav-btn w-full text-left px-5 py-3.5 rounded-xl font-bold text-[#5A4A32] bg-dune-active transition-colors">
+                    문서 관리
+                </button>
+                <button onclick="switchView('collections', this)" class="nav-btn w-full text-left px-5 py-3.5 rounded-xl font-bold text-[#7A6A53] hover:bg-dune-active/50 transition-colors">
+                    데이터 소스
+                </button>
+                <button onclick="switchView('search', this)" class="nav-btn w-full text-left px-5 py-3.5 rounded-xl font-bold text-[#7A6A53] hover:bg-dune-active/50 transition-colors">
+                    RAG 채팅
+                </button>
+                <button onclick="switchView('graph', this)" class="nav-btn w-full text-left px-5 py-3.5 rounded-xl font-bold text-[#7A6A53] hover:bg-dune-active/50 transition-colors">
+                    인덱싱 모니터
+                </button>
+                <button onclick="switchView('settings', this)" class="nav-btn w-full text-left px-5 py-3.5 rounded-xl font-bold text-[#7A6A53] hover:bg-dune-active/50 transition-colors">
+                    설정
+                </button>
+            </nav>
+        </aside>
+
+        <!-- 메인 컨텐츠 영역 -->
+        <main class="flex-1 p-10 overflow-y-auto relative">
+            
+            <!-- 뷰 1: 문서 관리 (기본 이미지 화면) -->
+            <div id="view-documents" class="view-section fade-in block">
+                <h2 class="text-3xl font-serif font-bold text-[#4A3F35] mb-8">문서 관리</h2>
+                
+                <!-- 업로드 영역 -->
+                <div class="border-2 border-dashed border-[#CBB89A] bg-[#FDFBF7] rounded-2xl p-12 flex flex-col items-center justify-center text-[#8C7A61] mb-8 cursor-pointer hover:bg-white transition-colors">
+                    <i data-lucide="sun" class="w-8 h-8 mb-3 text-[#A8987F]"></i>
+                    <p class="text-lg font-bold mb-1 text-[#5A4A32]">파일 업로드</p>
+                    <p class="text-sm">사막의 여유로움처럼</p>
+                </div>
+
+                <!-- 파일 목록 -->
+                <div class="space-y-4">
+                    <div class="bg-white border border-[#EAE0CB] rounded-2xl p-5 flex items-center justify-between shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <i data-lucide="file-text" class="text-[#A8987F]"></i>
+                            <span class="font-medium text-[#4A3F35]">제품 가이드.pdf</span>
+                        </div>
+                        <span class="bg-dune-badge1 text-[#5A4A32] px-4 py-1.5 rounded-full text-sm font-bold tracking-wide">준비됨</span>
+                    </div>
+
+                    <div class="bg-white border border-[#EAE0CB] rounded-2xl p-5 flex items-center justify-between shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <i data-lucide="file-code" class="text-[#A8987F]"></i>
+                            <span class="font-medium text-[#4A3F35]">API 문서.md</span>
+                        </div>
+                        <span class="bg-dune-badge2 text-[#5A4A32] px-4 py-1.5 rounded-full text-sm font-bold tracking-wide">처리중</span>
+                    </div>
+
+                    <div class="bg-white border border-[#EAE0CB] rounded-2xl p-5 flex items-center justify-between shadow-sm opacity-60">
+                        <div class="flex items-center gap-4">
+                            <i data-lucide="table" class="text-[#A8987F]"></i>
+                            <span class="font-medium text-[#4A3F35]">고객_FAQ_데이터.csv</span>
+                        </div>
+                        <span class="bg-gray-200 text-gray-600 px-4 py-1.5 rounded-full text-sm font-bold tracking-wide">대기중</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 뷰 2: 데이터 소스 연결 -->
+            <div id="view-collections" class="view-section fade-in hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-3xl font-serif font-bold text-[#4A3F35]">데이터 소스 연결</h2>
+                    <button class="bg-dune-text text-white px-5 py-2 rounded-xl font-bold text-sm hover:bg-[#322A21] transition-colors">새 소스 추가</button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- Slack Card -->
+                    <div class="bg-white border border-[#EAE0CB] rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                        <i data-lucide="slack" class="w-12 h-12 text-[#E5A8A8] mb-4"></i>
+                        <h3 class="font-bold text-lg mb-1">Slack</h3>
+                        <p class="text-sm text-dune-textLight mb-4">사내 메신저 데이터 연동</p>
+                        <span class="bg-dune-badge1 text-[#5A4A32] px-4 py-1 rounded-full text-xs font-bold">연결됨</span>
+                    </div>
+                    
+                    <!-- Web Crawler Card -->
+                    <div class="bg-white border border-[#EAE0CB] rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                        <i data-lucide="globe" class="w-12 h-12 text-[#A8C6E5] mb-4"></i>
+                        <h3 class="font-bold text-lg mb-1">Web Crawler</h3>
+                        <p class="text-sm text-dune-textLight mb-4">지정된 URL 정기 크롤링</p>
+                        <span class="bg-dune-badge1 text-[#5A4A32] px-4 py-1 rounded-full text-xs font-bold">연결됨</span>
+                    </div>
+
+                    <!-- Notion Card -->
+                    <div class="bg-white border border-[#EAE0CB] rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                        <i data-lucide="book-open" class="w-12 h-12 text-[#A8E5B9] mb-4"></i>
+                        <h3 class="font-bold text-lg mb-1">Notion</h3>
+                        <p class="text-sm text-dune-textLight mb-4">위키 및 문서 동기화</p>
+                        <span class="bg-[#EAE0CB] text-[#8C7A61] px-4 py-1 rounded-full text-xs font-bold">연결 안됨</span>
+                    </div>
+
+                    <!-- Local DB Card -->
+                    <div class="bg-white border border-[#EAE0CB] rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                        <i data-lucide="database" class="w-12 h-12 text-[#CBB89A] mb-4"></i>
+                        <h3 class="font-bold text-lg mb-1">PostgreSQL</h3>
+                        <p class="text-sm text-dune-textLight mb-4">정형 데이터 연동</p>
+                        <span class="bg-[#EAE0CB] text-[#8C7A61] px-4 py-1 rounded-full text-xs font-bold">연결 안됨</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 뷰 3: RAG 채팅 -->
+            <div id="view-search" class="view-section fade-in hidden h-full flex flex-col">
+                <h2 class="text-3xl font-serif font-bold text-[#4A3F35] mb-6">RAG 채팅 & 출처</h2>
+                
+                <div class="flex-1 bg-white border border-[#EAE0CB] rounded-2xl flex flex-col overflow-hidden shadow-sm">
+                    <!-- 채팅 내역 -->
+                    <div class="flex-1 p-6 overflow-y-auto space-y-6">
+                        <!-- User Message -->
+                        <div class="flex justify-end">
+                            <div class="bg-dune-active text-[#4A3F35] px-5 py-3 rounded-2xl rounded-tr-sm max-w-[80%]">
+                                <p>ModolRAG의 주요 아키텍처는 어떻게 구성되어 있나요?</p>
+                            </div>
+                        </div>
+                        <!-- AI Message -->
+                        <div class="flex justify-start">
+                            <div class="bg-[#FDFBF7] border border-[#EAE0CB] text-[#4A3F35] px-5 py-4 rounded-2xl rounded-tl-sm max-w-[90%]">
+                                <p class="mb-3">ModolRAG는 주로 다음과 같은 아키텍처로 구성되어 있습니다.</p>
+                                <ul class="list-disc pl-5 mb-4 space-y-1 text-sm">
+                                    <li><strong>FAST API 백엔드:</strong> 고성능 비동기 API 처리</li>
+                                    <li><strong>Vector DB:</strong> 문서 임베딩 저장을 위한 ChromaDB 또는 Pinecone</li>
+                                    <li><strong>LLM 연동:</strong> 답변 생성을 위한 OpenAI 또는 로컬 모델</li>
+                                </ul>
+                                <!-- 출처 (Source) -->
+                                <div class="mt-4 bg-[#F2E8D5] p-3 rounded-xl border border-[#D8CBB6]">
+                                    <div class="flex items-center gap-2 mb-2 text-xs font-bold text-[#7A6A53]">
+                                        <i data-lucide="book-marked" class="w-4 h-4"></i> 출처 문서
+                                    </div>
+                                    <div class="text-xs text-[#5A4A32] leading-relaxed bg-white/50 p-2 rounded-lg">
+                                        "백엔드 시스템은 <mark class="bg-[#E5D5BA] px-1 rounded">FAST API</mark>를 기반으로 구축되어 빠른 응답성을 보장하며, 
+                                        벡터 데이터베이스로는 <mark class="bg-[#E5D5BA] px-1 rounded">ChromaDB</mark>를 기본 지원합니다." 
+                                        <br><span class="text-[#8C7A61] mt-1 block">- 제품 가이드.pdf (Page 12)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 입력 창 -->
+                    <div class="p-4 bg-[#FDFBF7] border-t border-[#EAE0CB]">
+                        <div class="relative">
+                            <input type="text" placeholder="질문을 입력하세요..." class="w-full bg-white border border-[#D8CBB6] rounded-xl pl-4 pr-12 py-3 focus:outline-none focus:border-[#A8987F] focus:ring-1 focus:ring-[#A8987F] transition-all">
+                            <button class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-[#8C7A61] hover:text-[#4A3F35] hover:bg-[#F2E8D5] rounded-lg transition-colors">
+                                <i data-lucide="send" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 뷰 4: 인덱싱 모니터 -->
+            <div id="view-graph" class="view-section fade-in hidden">
+                <h2 class="text-3xl font-serif font-bold text-[#4A3F35] mb-8">인덱싱 모니터</h2>
+                
+                <div class="bg-white border border-[#EAE0CB] rounded-2xl p-8 shadow-sm mb-6">
+                    <div class="flex justify-between items-end mb-4">
+                        <div>
+                            <p class="text-sm font-bold text-[#8C7A61] mb-1">Current Job Status</p>
+                            <h3 class="text-2xl font-bold text-[#4A3F35]">제품_가이드_통합본.pdf</h3>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full">Active</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="mb-2 flex justify-between text-sm text-[#5A4A32] font-medium">
+                        <span>Chunking & Embedding</span>
+                        <span>78%</span>
+                    </div>
+                    <div class="w-full bg-[#F2E8D5] rounded-full h-3 mb-8 overflow-hidden">
+                        <div class="bg-[#A8987F] h-3 rounded-full" style="width: 78%"></div>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-3 gap-4 border-t border-[#EAE0CB] pt-6">
+                        <div>
+                            <p class="text-xs text-[#8C7A61] mb-1 uppercase tracking-wider font-bold">Total Chunks</p>
+                            <p class="text-xl font-bold text-[#4A3F35]">1,284</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-[#8C7A61] mb-1 uppercase tracking-wider font-bold">Processing Time</p>
+                            <p class="text-xl font-bold text-[#4A3F35]">02:14</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-[#8C7A61] mb-1 uppercase tracking-wider font-bold">Estimated Left</p>
+                            <p class="text-xl font-bold text-[#4A3F35]">00:45</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 벡터 스토어 상태 (간단 버전) -->
+                <div class="bg-[#F2E8D5] border border-[#D8CBB6] rounded-2xl p-6 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <i data-lucide="layers" class="text-[#8C7A61] w-8 h-8"></i>
+                        <div>
+                            <h4 class="font-bold text-[#4A3F35]">Chroma Vector DB</h4>
+                            <p class="text-sm text-[#7A6A53]">Total Documents: 4,092 | Size: 113.5 MB</p>
+                        </div>
+                    </div>
+                    <button class="px-4 py-2 border border-[#CBB89A] rounded-lg text-sm font-bold text-[#5A4A32] hover:bg-white transition-colors">관리</button>
+                </div>
+            </div>
+            
+            <!-- 뷰 5: 설정 (빈 화면) -->
+            <div id="view-settings" class="view-section fade-in hidden">
+                <h2 class="text-3xl font-serif font-bold text-[#4A3F35] mb-8">시스템 설정</h2>
+                <div class="bg-white border border-[#EAE0CB] rounded-2xl p-12 text-center shadow-sm">
+                    <i data-lucide="settings" class="w-12 h-12 text-[#CBB89A] mx-auto mb-4 animate-[spin_4s_linear_infinite]"></i>
+                    <p class="text-[#8C7A61] font-medium">시스템 및 LLM 파라미터 설정 페이지입니다.</p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // Lucide 아이콘 초기화
+        lucide.createIcons();
+
+        // 탭 전환 스크립트
+        function switchView(viewId, btnElement) {
+            // 모든 뷰 숨기기
+            document.querySelectorAll('.view-section').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('block');
+            });
+            
+            // 모든 버튼 비활성화 스타일 적용
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-dune-active', 'text-[#5A4A32]');
+                btn.classList.add('text-[#7A6A53]');
+            });
+
+            // 선택된 뷰 보이기
+            const targetView = document.getElementById('view-' + viewId);
+            if (targetView) {
+                targetView.classList.remove('hidden');
+                targetView.classList.add('block');
+            }
+
+            // 선택된 버튼 활성화 스타일 적용
+            btnElement.classList.remove('text-[#7A6A53]');
+            btnElement.classList.add('bg-dune-active', 'text-[#5A4A32]');
+        }
+    </script>
+</body>
+</html>

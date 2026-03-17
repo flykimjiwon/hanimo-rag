@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     SIMILARITY_TOP_K: int = 5
     SIMILARITY_THRESHOLD: float = 0.7
 
+    # LLM Generation
+    LLM_PROVIDER: str = "ollama"
+    LLM_MODEL: str = "llama3"
+    LLM_TEMPERATURE: float = 0.1
+    LLM_MAX_TOKENS: int = 2048
+    ENABLE_HYDE: bool = False
+
     model_config = {"env_prefix": "MODOLRAG_", "env_file": ".env", "extra": "ignore"}
 
     @property

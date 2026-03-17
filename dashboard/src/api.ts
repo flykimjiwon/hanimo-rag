@@ -43,4 +43,10 @@ export const api = {
     apiFetch(`/collections/${collId}/documents`, { method: 'POST', body: JSON.stringify({ document_ids: docIds }) }),
   removeDocsFromCollection: (collId: string, docIds: string[]) =>
     apiFetch(`/collections/${collId}/documents`, { method: 'DELETE', body: JSON.stringify({ document_ids: docIds }) }),
+
+  getApps: () => apiFetch('/apps'),
+  getApp: (id: string) => apiFetch(`/apps/${id}`),
+  createApp: (data: Record<string, unknown>) => apiFetch('/apps', { method: 'POST', body: JSON.stringify(data) }),
+  updateApp: (id: string, data: Record<string, unknown>) => apiFetch(`/apps/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteApp: (id: string) => apiFetch(`/apps/${id}`, { method: 'DELETE' }),
 }

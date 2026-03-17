@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ModolRAG — Design Concepts Vol.3</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'Noto Sans KR', sans-serif; background: #0a0a0a; color: #fff; padding: 40px 24px; }
+h1 { font-size: 28px; font-weight: 800; text-align: center; margin-bottom: 8px; }
+.sub { text-align: center; color: #555; font-size: 14px; margin-bottom: 48px; }
+.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px; max-width: 1200px; margin: 0 auto; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+.card-wrap { display: flex; flex-direction: column; gap: 12px; }
+.label { font-size: 13px; font-weight: 700; color: #555; letter-spacing: 0.05em; text-transform: uppercase; }
+.label span { color: #ddd; }
+.mockup { width: 100%; height: 380px; border-radius: 20px; overflow: hidden; display: flex; position: relative; font-size: 12px; }
+.sidebar { width: 180px; flex-shrink: 0; display: flex; flex-direction: column; padding: 20px 12px; gap: 4px; }
+.content { flex: 1; padding: 24px; overflow: hidden; }
+.logo { font-weight: 800; font-size: 15px; margin-bottom: 20px; padding: 0 8px; line-height: 1.3; }
+.nav-item { padding: 9px 12px; border-radius: 10px; font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.nav-item.active { font-weight: 700; }
+.page-title { font-size: 20px; font-weight: 800; margin-bottom: 16px; }
+.doc-card { border-radius: 14px; padding: 14px; margin-bottom: 10px; font-size: 11px; }
+.tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+.upload-zone { border-radius: 16px; padding: 20px; text-align: center; font-size: 11px; margin-bottom: 14px; }
+.search-bar { border-radius: 12px; padding: 10px 14px; font-size: 12px; margin-bottom: 14px; }
+
+/* ═══════════════════════════════════════
+   31. NOTION WHITE — 노션 화이트
+   [SIMPLE] 순백 클린, 따뜻한 그레이 사이드바
+═══════════════════════════════════════ */
+.theme-notion .mockup { background: #ffffff; }
+.theme-notion .sidebar { background: #f7f6f3; border-right: 1px solid #e8e5df; }
+.theme-notion .logo { color: #37352f; font-size: 14px; letter-spacing: -0.3px; }
+.theme-notion .nav-item { color: #91918e; }
+.theme-notion .nav-item.active { background: #f0efed; color: #37352f; }
+.theme-notion .page-title { color: #37352f; letter-spacing: -0.5px; }
+.theme-notion .upload-zone { border: 1.5px dashed #d3d1cb; background: #fafaf8; color: #91918e; }
+.theme-notion .doc-card { background: #ffffff; border: 1px solid #e8e5df; color: #37352f; }
+.theme-notion .tag { background: #e8e5df; color: #6b6b68; }
+
+/* ═══════════════════════════════════════
+   32. LINEAR DARK — 리니어 다크
+   [SIMPLE] 어두운 그레이, 미묘한 블루 액센트
+═══════════════════════════════════════ */
+.theme-linear .mockup { background: #1b1b1f; }
+.theme-linear .sidebar { background: #16161a; border-right: 1px solid #2a2a30; }
+.theme-linear .logo { color: #eeeef0; font-size: 14px; letter-spacing: -0.3px; }
+.theme-linear .nav-item { color: #6b6b76; }
+.theme-linear .nav-item.active { background: #2a2a30; color: #eeeef0; }
+.theme-linear .page-title { color: #eeeef0; letter-spacing: -0.5px; }
+.theme-linear .upload-zone { border: 1.5px dashed #3a3a42; background: #1e1e24; color: #6b6b76; }
+.theme-linear .doc-card { background: #22222a; border: 1px solid #2e2e36; color: #b4b4be; }
+.theme-linear .tag { background: #5e6ad2; color: #fff; border-radius: 6px; }
+
+/* ═══════════════════════════════════════
+   33. VERCEL CLEAN — 버셀 클린
+   [SIMPLE] 블랙+화이트 극명한 대비, 날카로운 미니멀
+═══════════════════════════════════════ */
+.theme-vercel .mockup { background: #000000; }
+.theme-vercel .sidebar { background: #0a0a0a; border-right: 1px solid #1a1a1a; }
+.theme-vercel .logo { color: #ededed; font-size: 14px; letter-spacing: -0.5px; }
+.theme-vercel .nav-item { color: #666; }
+.theme-vercel .nav-item.active { background: transparent; color: #ededed; border-left: 2px solid #ededed; border-radius: 0 8px 8px 0; padding-left: 10px; }
+.theme-vercel .page-title { color: #ededed; letter-spacing: -0.5px; }
+.theme-vercel .upload-zone { border: 1px solid #333; background: #0a0a0a; color: #666; border-radius: 12px; }
+.theme-vercel .doc-card { background: #111; border: 1px solid #222; color: #a0a0a0; }
+.theme-vercel .tag { background: #ededed; color: #000; border-radius: 100px; }
+
+/* ═══════════════════════════════════════
+   34. GITHUB LIGHT — 깃허브 라이트
+   [SIMPLE] 연한 그레이, 블루 링크, 개발자 친화적
+═══════════════════════════════════════ */
+.theme-github .mockup { background: #ffffff; }
+.theme-github .sidebar { background: #f6f8fa; border-right: 1px solid #d0d7de; }
+.theme-github .logo { color: #1f2328; font-size: 14px; }
+.theme-github .nav-item { color: #656d76; }
+.theme-github .nav-item.active { background: rgba(208,215,222,0.48); color: #1f2328; border-radius: 8px; }
+.theme-github .page-title { color: #1f2328; }
+.theme-github .upload-zone { border: 1px dashed #d0d7de; background: #f6f8fa; color: #656d76; border-radius: 8px; }
+.theme-github .doc-card { background: #ffffff; border: 1px solid #d0d7de; color: #1f2328; border-radius: 8px; }
+.theme-github .tag { background: #ddf4ff; color: #0969da; border-radius: 100px; }
+
+/* ═══════════════════════════════════════
+   35. STRIPE MINIMAL — 스트라이프 미니멀
+   [SIMPLE] 깨끗한 화이트, 인디고 액센트, 정돈된 카드
+═══════════════════════════════════════ */
+.theme-stripe .mockup { background: #f6f9fc; }
+.theme-stripe .sidebar { background: #ffffff; border-right: 1px solid #e3e8ee; }
+.theme-stripe .logo { color: #635bff; font-size: 14px; }
+.theme-stripe .nav-item { color: #8792a2; }
+.theme-stripe .nav-item.active { background: #f7f5ff; color: #635bff; border-radius: 8px; }
+.theme-stripe .page-title { color: #1a1f36; }
+.theme-stripe .upload-zone { border: 1.5px dashed #d8dee6; background: #ffffff; color: #8792a2; border-radius: 10px; }
+.theme-stripe .doc-card { background: #ffffff; border: 1px solid #e3e8ee; color: #3c4257; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.theme-stripe .tag { background: #f0eeff; color: #635bff; }
+
+/* ═══════════════════════════════════════
+   36. APPLE SYSTEM — 애플 시스템
+   [SIMPLE] 시스템 그레이, 블루 액센트, SF 느낌
+═══════════════════════════════════════ */
+.theme-apple .mockup { background: #f5f5f7; }
+.theme-apple .sidebar { background: rgba(255,255,255,0.72); border-right: 1px solid #d2d2d7; }
+.theme-apple .logo { color: #1d1d1f; font-size: 14px; font-weight: 700; }
+.theme-apple .nav-item { color: #86868b; }
+.theme-apple .nav-item.active { background: #007aff; color: #ffffff; border-radius: 8px; }
+.theme-apple .page-title { color: #1d1d1f; }
+.theme-apple .upload-zone { border: 1.5px dashed #c7c7cc; background: #ffffff; color: #86868b; border-radius: 12px; }
+.theme-apple .doc-card { background: #ffffff; border: none; color: #1d1d1f; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.theme-apple .tag { background: #007aff; color: #fff; border-radius: 6px; }
+
+/* ═══════════════════════════════════════
+   37. TAILWIND STONE — 테일윈드 스톤
+   [SIMPLE] 따뜻한 스톤 그레이, 스카이 블루 포인트
+═══════════════════════════════════════ */
+.theme-tailwind .mockup { background: #fafaf9; }
+.theme-tailwind .sidebar { background: #f5f5f4; border-right: 1px solid #e7e5e4; }
+.theme-tailwind .logo { color: #1c1917; font-size: 14px; letter-spacing: -0.3px; }
+.theme-tailwind .nav-item { color: #a8a29e; }
+.theme-tailwind .nav-item.active { background: #1c1917; color: #fafaf9; border-radius: 8px; }
+.theme-tailwind .page-title { color: #1c1917; }
+.theme-tailwind .upload-zone { border: 1.5px dashed #d6d3d1; background: #ffffff; color: #a8a29e; border-radius: 10px; }
+.theme-tailwind .doc-card { background: #ffffff; border: 1px solid #e7e5e4; color: #44403c; border-radius: 10px; }
+.theme-tailwind .tag { background: #e0f2fe; color: #0369a1; }
+
+/* ═══════════════════════════════════════
+   38. SLACK WARM — 슬랙 웜
+   [SIMPLE] 진한 보라 사이드바, 크림 콘텐츠 영역
+═══════════════════════════════════════ */
+.theme-slack .mockup { background: #ffffff; }
+.theme-slack .sidebar { background: #3f0e40; }
+.theme-slack .logo { color: #ffffff; font-size: 14px; }
+.theme-slack .nav-item { color: rgba(255,255,255,0.45); }
+.theme-slack .nav-item.active { background: #1164a3; color: #ffffff; border-radius: 8px; }
+.theme-slack .page-title { color: #1d1c1d; }
+.theme-slack .upload-zone { border: 1.5px dashed #ddd; background: #f8f8f8; color: #616061; border-radius: 10px; }
+.theme-slack .doc-card { background: #ffffff; border: 1px solid #e8e8e8; color: #1d1c1d; border-radius: 10px; }
+.theme-slack .tag { background: #e8f5e9; color: #007a5a; }
+
+/* ═══════════════════════════════════════
+   39. FIGMA GRAY — 피그마 그레이
+   [SIMPLE] 다크 사이드바, 라이트 콘텐츠, 오렌지 포인트
+═══════════════════════════════════════ */
+.theme-figma .mockup { background: #f5f5f5; }
+.theme-figma .sidebar { background: #2c2c2c; }
+.theme-figma .logo { color: #ffffff; font-size: 14px; }
+.theme-figma .nav-item { color: rgba(255,255,255,0.4); }
+.theme-figma .nav-item.active { background: rgba(255,255,255,0.1); color: #ffffff; border-radius: 6px; }
+.theme-figma .page-title { color: #333; }
+.theme-figma .upload-zone { border: 1.5px dashed #ccc; background: #fff; color: #999; border-radius: 8px; }
+.theme-figma .doc-card { background: #fff; border: 1px solid #e5e5e5; color: #333; border-radius: 8px; }
+.theme-figma .tag { background: #ff7262; color: #fff; border-radius: 4px; }
+
+/* ═══════════════════════════════════════
+   40. ZEN INK — 젠 잉크
+   [SIMPLE] 거의 화이트, 블랙 잉크 포인트, 여백 중시
+═══════════════════════════════════════ */
+.theme-zen .mockup { background: #fcfcfa; }
+.theme-zen .sidebar { background: #fcfcfa; border-right: 1px solid #e8e8e4; }
+.theme-zen .logo { color: #111; font-size: 13px; letter-spacing: 2px; font-weight: 900; }
+.theme-zen .nav-item { color: #bbb; font-size: 11px; }
+.theme-zen .nav-item.active { background: transparent; color: #111; border-bottom: 1.5px solid #111; border-radius: 0; padding-bottom: 7px; }
+.theme-zen .page-title { color: #111; font-weight: 900; letter-spacing: -0.5px; }
+.theme-zen .upload-zone { border: 1px solid #ddd; background: transparent; color: #aaa; border-radius: 8px; }
+.theme-zen .doc-card { background: transparent; border-bottom: 1px solid #e8e8e4; border-radius: 0; color: #333; padding: 14px 4px; }
+.theme-zen .tag { background: transparent; color: #111; border: 1px solid #ccc; border-radius: 4px; }
+
+/* ═══════════════════════════════════════
+   41. SUPABASE GREEN — 수파베이스 다크
+   [SIMPLE] 다크 그레이-그린, 에메랄드 그린 액센트
+═══════════════════════════════════════ */
+.theme-supabase .mockup { background: #171717; }
+.theme-supabase .sidebar { background: #1c1c1c; border-right: 1px solid #2a2a2a; }
+.theme-supabase .logo { color: #3ecf8e; font-size: 14px; }
+.theme-supabase .nav-item { color: #555; }
+.theme-supabase .nav-item.active { background: rgba(62,207,142,0.1); color: #3ecf8e; border-radius: 8px; }
+.theme-supabase .page-title { color: #ededed; }
+.theme-supabase .upload-zone { border: 1px dashed #333; background: #1e1e1e; color: #666; border-radius: 8px; }
+.theme-supabase .doc-card { background: #212121; border: 1px solid #2a2a2a; color: #a0a0a0; }
+.theme-supabase .tag { background: rgba(62,207,142,0.15); color: #3ecf8e; }
+
+/* ═══════════════════════════════════════
+   42. RAYCAST SMOOTH — 레이캐스트 스무스
+   [SIMPLE] 부드러운 다크모드, 라운드, 웜 그레이
+═══════════════════════════════════════ */
+.theme-raycast .mockup { background: #1a1a1e; }
+.theme-raycast .sidebar { background: #141418; border-right: 1px solid #28282e; }
+.theme-raycast .logo { color: #ff6363; font-size: 14px; }
+.theme-raycast .nav-item { color: #5a5a64; }
+.theme-raycast .nav-item.active { background: #28282e; color: #e4e4e8; border-radius: 10px; }
+.theme-raycast .page-title { color: #e4e4e8; }
+.theme-raycast .upload-zone { border: 1px dashed #38383e; background: #1e1e24; color: #5a5a64; border-radius: 12px; }
+.theme-raycast .doc-card { background: #222228; border: 1px solid #2e2e34; color: #a8a8b0; border-radius: 12px; }
+.theme-raycast .tag { background: rgba(255,99,99,0.15); color: #ff6363; }
+
+/* ═══════════════════════════════════════
+   43. MIDNIGHT INDIGO — 미드나이트 인디고
+   [CREATIVE] 깊은 네이비+인디고, 차분한 블루 톤
+═══════════════════════════════════════ */
+.theme-indigo .mockup { background: #10101e; }
+.theme-indigo .sidebar { background: #0c0c18; border-right: 1px solid #1e1e34; }
+.theme-indigo .logo { color: #8b8eff; font-size: 14px; }
+.theme-indigo .nav-item { color: #3a3a5c; }
+.theme-indigo .nav-item.active { background: #1a1a30; color: #a8aaff; border: 1px solid #2a2a4a; border-radius: 8px; }
+.theme-indigo .page-title { color: #d0d0e8; }
+.theme-indigo .upload-zone { border: 1px dashed #2a2a4a; background: #12121e; color: #505077; }
+.theme-indigo .doc-card { background: #14142a; border: 1px solid #22223a; color: #8888aa; }
+.theme-indigo .tag { background: #1e1e3a; color: #8b8eff; border: 1px solid #2e2e50; }
+
+/* ═══════════════════════════════════════
+   44. COPPER BRONZE — 코퍼 브론즈
+   [CREATIVE] 따뜻한 다크, 구리/브론즈 메탈 느낌
+═══════════════════════════════════════ */
+.theme-copper .mockup { background: #1a1410; }
+.theme-copper .sidebar { background: #151008; border-right: 1px solid #2a2018; }
+.theme-copper .logo { color: #c8956a; font-size: 15px; }
+.theme-copper .nav-item { color: #5a4838; }
+.theme-copper .nav-item.active { background: rgba(200,149,106,0.1); color: #c8956a; border: 1px solid rgba(200,149,106,0.2); border-radius: 8px; }
+.theme-copper .page-title { color: #e8d8c8; }
+.theme-copper .upload-zone { border: 1px dashed #4a3828; background: #1c1610; color: #7a6040; }
+.theme-copper .doc-card { background: #1e1810; border: 1px solid #2e2418; color: #a08868; }
+.theme-copper .tag { background: rgba(200,149,106,0.15); color: #c8956a; }
+
+/* ═══════════════════════════════════════
+   45. TERRACOTTA — 테라코타
+   [CREATIVE] 따뜻한 흙빛, 테라코타 오렌지 포인트
+═══════════════════════════════════════ */
+.theme-terra .mockup { background: #faf5f0; }
+.theme-terra .sidebar { background: #f3ebe2; border-right: 1px solid #e0d4c6; }
+.theme-terra .logo { color: #c05530; font-size: 14px; }
+.theme-terra .nav-item { color: #a89888; }
+.theme-terra .nav-item.active { background: #c05530; color: #fff; border-radius: 8px; }
+.theme-terra .page-title { color: #3a2a20; }
+.theme-terra .upload-zone { border: 1.5px dashed #c8b8a8; background: #fdf8f4; color: #a08878; border-radius: 10px; }
+.theme-terra .doc-card { background: #fff; border: 1px solid #e0d4c6; color: #4a3828; border-radius: 10px; }
+.theme-terra .tag { background: #fde8e0; color: #c05530; }
+
+/* ═══════════════════════════════════════
+   46. NORDIC FROST — 노르딕 프로스트
+   [CREATIVE] 쿨한 블루 그레이, 차가운 미니멀리즘
+═══════════════════════════════════════ */
+.theme-nordic .mockup { background: #eef1f5; }
+.theme-nordic .sidebar { background: #e4e8ee; border-right: 1px solid #d0d6de; }
+.theme-nordic .logo { color: #2e3440; font-size: 14px; }
+.theme-nordic .nav-item { color: #8891a0; }
+.theme-nordic .nav-item.active { background: #2e3440; color: #eceff4; border-radius: 8px; }
+.theme-nordic .page-title { color: #2e3440; }
+.theme-nordic .upload-zone { border: 1.5px dashed #b8c0cc; background: #f4f6f9; color: #7a8494; border-radius: 10px; }
+.theme-nordic .doc-card { background: #ffffff; border: 1px solid #d8dce4; color: #3b4252; border-radius: 10px; box-shadow: 0 1px 3px rgba(46,52,64,0.05); }
+.theme-nordic .tag { background: #d8dee8; color: #4c566a; }
+
+/* ═══════════════════════════════════════
+   47. ESPRESSO — 에스프레소
+   [CREATIVE] 진한 커피 브라운 다크 테마
+═══════════════════════════════════════ */
+.theme-espresso .mockup { background: #1c1614; }
+.theme-espresso .sidebar { background: #161110; border-right: 1px solid #2a2220; }
+.theme-espresso .logo { color: #d4a574; font-size: 14px; }
+.theme-espresso .nav-item { color: #584840; }
+.theme-espresso .nav-item.active { background: #2a2220; color: #d4a574; border-radius: 8px; }
+.theme-espresso .page-title { color: #e8dcd0; }
+.theme-espresso .upload-zone { border: 1px dashed #3a302a; background: #1e1816; color: #6a5a50; }
+.theme-espresso .doc-card { background: #211a18; border: 1px solid #302824; color: #a08878; }
+.theme-espresso .tag { background: #3a2e28; color: #d4a574; }
+
+/* ═══════════════════════════════════════
+   48. OLIVE FIELD — 올리브 필드
+   [CREATIVE] 차분한 올리브 그린, 어스 톤 라이트
+═══════════════════════════════════════ */
+.theme-olive .mockup { background: #f6f6f0; }
+.theme-olive .sidebar { background: #eeeee6; border-right: 1px solid #d8d8cc; }
+.theme-olive .logo { color: #4a5a30; font-size: 14px; }
+.theme-olive .nav-item { color: #9a9a88; }
+.theme-olive .nav-item.active { background: #4a5a30; color: #f6f6f0; border-radius: 8px; }
+.theme-olive .page-title { color: #2a3018; }
+.theme-olive .upload-zone { border: 1.5px dashed #b8b8a4; background: #fafaf6; color: #8a8a78; border-radius: 10px; }
+.theme-olive .doc-card { background: #fff; border: 1px solid #d8d8cc; color: #3a4028; border-radius: 10px; }
+.theme-olive .tag { background: #e4ecd8; color: #4a5a30; }
+
+/* ═══════════════════════════════════════
+   49. DUSK ROSE — 더스크 로제
+   [CREATIVE] 다크 모드 + 머스크 핑크/로제 액센트
+═══════════════════════════════════════ */
+.theme-duskrose .mockup { background: #1a1618; }
+.theme-duskrose .sidebar { background: #151214; border-right: 1px solid #2a2428; }
+.theme-duskrose .logo { color: #c8788a; font-size: 14px; }
+.theme-duskrose .nav-item { color: #584850; }
+.theme-duskrose .nav-item.active { background: rgba(200,120,138,0.12); color: #c8788a; border: 1px solid rgba(200,120,138,0.2); border-radius: 8px; }
+.theme-duskrose .page-title { color: #e8d8de; }
+.theme-duskrose .upload-zone { border: 1px dashed #3a2e34; background: #1c1618; color: #6a5860; }
+.theme-duskrose .doc-card { background: #1e181a; border: 1px solid #2e2428; color: #a08890; }
+.theme-duskrose .tag { background: rgba(200,120,138,0.15); color: #c8788a; }
+
+/* ═══════════════════════════════════════
+   50. VOLCANIC ASH — 볼케닉 애쉬
+   [CREATIVE] 짙은 애쉬 그레이 + 엠버 오렌지
+═══════════════════════════════════════ */
+.theme-volcanic .mockup { background: #1c1c1a; }
+.theme-volcanic .sidebar { background: #161614; border-right: 1px solid #2c2c28; }
+.theme-volcanic .logo { color: #e0883a; font-size: 14px; }
+.theme-volcanic .nav-item { color: #585850; }
+.theme-volcanic .nav-item.active { background: #2a2a26; color: #e0883a; border-radius: 8px; }
+.theme-volcanic .page-title { color: #e8e4dc; }
+.theme-volcanic .upload-zone { border: 1px dashed #3a3a34; background: #1e1e1c; color: #6a6a60; }
+.theme-volcanic .doc-card { background: #222220; border: 1px solid #2e2e2a; color: #a0a098; }
+.theme-volcanic .tag { background: rgba(224,136,58,0.15); color: #e0883a; }
+</style>
+</head>
+<body>
+<h1>ModolRAG — Design Concepts Vol.3</h1>
+<p class="sub">추가 시안 20개 (31번~50번) · 원하는 번호 말씀해주세요</p>
+
+<div class="grid">
+
+<!-- 31 -->
+<div class="card-wrap theme-notion">
+  <div class="label">31 · <span>Notion White</span> — 노션 화이트</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 드래그하거나 클릭하여 업로드<br><small style="color:#bbb">PDF, Word, Excel, PPT, MD</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+      <div class="doc-card">API 문서.md <span class="tag">Ready</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 32 -->
+<div class="card-wrap theme-linear">
+  <div class="label">32 · <span>Linear Dark</span> — 리니어 다크</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 드래그하여 업로드<br><small style="color:#5a5a66">PDF, Word, Excel 지원</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+      <div class="doc-card">API 문서.md <span class="tag">Ready</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 33 -->
+<div class="card-wrap theme-vercel">
+  <div class="label">33 · <span>Vercel Clean</span> — 버셀 클린</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일 드래그 또는 클릭<br><small style="color:#555">PDF · Word · Excel · MD</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 34 -->
+<div class="card-wrap theme-github">
+  <div class="label">34 · <span>GitHub Light</span> — 깃허브 라이트</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 드래그하여 업로드<br><small style="color:#8b949e">PDF, Word, Excel 지원</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+      <div class="doc-card">API 문서.md <span class="tag">Ready</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 35 -->
+<div class="card-wrap theme-stripe">
+  <div class="label">35 · <span>Stripe Minimal</span> — 스트라이프 미니멀</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일 업로드<br><small style="color:#a0a8b4">PDF, Word, Excel, PPT</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+      <div class="doc-card">API 문서.md <span class="tag">Ready</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 36 -->
+<div class="card-wrap theme-apple">
+  <div class="label">36 · <span>Apple System</span> — 애플 시스템 UI</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 이곳에 드래그<br><small style="color:#a1a1a6">PDF, Word, Excel 지원</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+      <div class="doc-card">API 문서.md <span class="tag">Ready</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 37 -->
+<div class="card-wrap theme-tailwind">
+  <div class="label">37 · <span>Tailwind Stone</span> — 테일윈드 스톤</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 드래그하여 업로드<br><small style="color:#a8a29e">PDF, Word, Excel 지원</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 38 -->
+<div class="card-wrap theme-slack">
+  <div class="label">38 · <span>Slack Warm</span> — 슬랙 웜</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 드래그하여 업로드<br><small style="color:#999">PDF, Word, Excel 지원</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+      <div class="doc-card">API 문서.md <span class="tag">Ready</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 39 -->
+<div class="card-wrap theme-figma">
+  <div class="label">39 · <span>Figma Gray</span> — 피그마 그레이</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일 드래그 업로드<br><small style="color:#aaa">PDF, Word, Excel 지원</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+      <div class="doc-card">API 문서.md <span class="tag">Ready</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 40 -->
+<div class="card-wrap theme-zen">
+  <div class="label">40 · <span>Zen Ink</span> — 젠 잉크</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">MODOLRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 드래그하세요<br><small style="color:#ccc">PDF, Word, Excel</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 41 -->
+<div class="card-wrap theme-supabase">
+  <div class="label">41 · <span>Supabase Green</span> — 수파베이스 다크</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 드래그하여 업로드<br><small style="color:#555">PDF, Word, Excel 지원</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+      <div class="doc-card">API 문서.md <span class="tag">Ready</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 42 -->
+<div class="card-wrap theme-raycast">
+  <div class="label">42 · <span>Raycast Smooth</span> — 레이캐스트 스무스</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 드래그하여 업로드<br><small style="color:#5a5a64">PDF, Word, Excel</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 43 -->
+<div class="card-wrap theme-indigo">
+  <div class="label">43 · <span>Midnight Indigo</span> — 미드나이트 인디고</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 드래그하세요<br><small style="color:#44446a">PDF, Word, Excel</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 44 -->
+<div class="card-wrap theme-copper">
+  <div class="label">44 · <span>Copper Bronze</span> — 코퍼 브론즈</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 드래그하세요<br><small style="color:#6a5040">PDF, Word, Excel</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 45 -->
+<div class="card-wrap theme-terra">
+  <div class="label">45 · <span>Terracotta</span> — 테라코타</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 드래그하여 업로드<br><small style="color:#a89080">PDF, Word, Excel 지원</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+      <div class="doc-card">API 문서.md <span class="tag">Ready</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 46 -->
+<div class="card-wrap theme-nordic">
+  <div class="label">46 · <span>Nordic Frost</span> — 노르딕 프로스트</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 드래그하여 업로드<br><small style="color:#8891a0">PDF, Word, Excel 지원</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+      <div class="doc-card">API 문서.md <span class="tag">Ready</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 47 -->
+<div class="card-wrap theme-espresso">
+  <div class="label">47 · <span>Espresso</span> — 에스프레소 다크</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 드래그하세요<br><small style="color:#5a4a40">PDF, Word, Excel</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 48 -->
+<div class="card-wrap theme-olive">
+  <div class="label">48 · <span>Olive Field</span> — 올리브 필드</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 드래그하여 업로드<br><small style="color:#8a8a78">PDF, Word, Excel 지원</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+      <div class="doc-card">API 문서.md <span class="tag">Ready</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 49 -->
+<div class="card-wrap theme-duskrose">
+  <div class="label">49 · <span>Dusk Rose</span> — 더스크 로제</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 드래그하세요<br><small style="color:#5a4850">PDF, Word, Excel</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 50 -->
+<div class="card-wrap theme-volcanic">
+  <div class="label">50 · <span>Volcanic Ash</span> — 볼케닉 애쉬</div>
+  <div class="mockup">
+    <div class="sidebar">
+      <div class="logo">ModolRAG</div>
+      <div class="nav-item active">문서 관리</div>
+      <div class="nav-item">컬렉션</div>
+      <div class="nav-item">검색</div>
+      <div class="nav-item">그래프</div>
+      <div class="nav-item">설정</div>
+    </div>
+    <div class="content">
+      <div class="page-title">문서 관리</div>
+      <div class="upload-zone">파일을 드래그하세요<br><small style="color:#5a5a50">PDF, Word, Excel</small></div>
+      <div class="doc-card">제품 가이드.pdf <span class="tag">Ready</span></div>
+      <div class="doc-card">가격표.xlsx <span class="tag">Processing</span></div>
+      <div class="doc-card">API 문서.md <span class="tag">Ready</span></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<p style="text-align:center;margin-top:48px;color:#444;font-size:13px">
+  Vol.1 (1~10번): <a href="design-concepts.html" style="color:#666">design-concepts.html</a><br>
+  Vol.2 (11~30번): <a href="design-concepts-2.html" style="color:#666">design-concepts-2.html</a><br><br>
+  원하는 테마 번호를 말씀해주시면 즉시 적용합니다
+</p>
+</body>
+</html>

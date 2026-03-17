@@ -144,5 +144,24 @@ CREATE INDEX IF NOT EXISTS idx_nodes_embedding ON modolrag_graph_nodes USING hns
 -- Community hierarchy
 CREATE INDEX IF NOT EXISTS idx_communities_path ON modolrag_communities USING gist(path);
 
+-- 9. modolrag_apps
+CREATE TABLE IF NOT EXISTS modolrag_apps (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    system_prompt TEXT DEFAULT 'You are a helpful assistant. Answer based on the provided context.',
+    llm_model TEXT DEFAULT 'llama3',
+    temperature FLOAT DEFAULT 0.1,
+    max_tokens INTEGER DEFAULT 2048,
+    top_k INTEGER DEFAULT 5,
+    search_mode TEXT DEFAULT 'hybrid',
+    collection_id UUID REFERENCES modolrag_collections(id) ON DELETE SET NULL,
+    document_ids UUID[] DEFAULT '{}',
+    is_active BOOLEAN DEFAULT true,
+    api_key TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Insert default settings if not exists
 INSERT INTO modolrag_settings (id) VALUES (gen_random_uuid()) ON CONFLICT DO NOTHING;

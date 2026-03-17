@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ModolRAG Design Gallery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0a0a0a;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            font-size: 1rem;
+            color: #888;
+            font-weight: 400;
+        }
+
+        .gallery {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .card {
+            background-color: #141414;
+            border: 1px solid #222;
+            border-radius: 1rem;
+            padding: 24px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: #333;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .card-label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .card-number {
+            font-size: 0.875rem;
+            color: #666;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .card-subtitle {
+            font-size: 0.875rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .card-link {
+            padding: 8px 16px;
+            background-color: #222;
+            border: 1px solid #333;
+            border-radius: 0.5rem;
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .card-link:hover {
+            background-color: #333;
+            border-color: #444;
+        }
+
+        .card-preview {
+            margin-top: 20px;
+            background-color: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            height: 315px;
+        }
+
+        .card-preview iframe {
+            width: 1440px;
+            height: 900px;
+            border: none;
+            transform: scale(0.35);
+            transform-origin: top left;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.75rem;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .card-title {
+                font-size: 1.125rem;
+            }
+
+            .card-preview {
+                height: 220px;
+            }
+
+            .card-preview iframe {
+                transform: scale(0.25);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ModolRAG Design Gallery</h1>
+            <p>스킬 기반 검증된 5개 디자인 프로토타입</p>
+        </div>
+
+        <div class="gallery">
+            <!-- Design 01 -->
+            <div class="card" onclick="openFullscreen('design-01-saas.html')">
+                <div class="card-header">
+                    <div class="card-label">
+                        <div class="card-number">01 · SaaS Standard</div>
+                        <div class="card-title">SaaS 스탠다드</div>
+                    </div>
+                    <a href="design-01-saas.html" target="_blank" class="card-link" onclick="event.stopPropagation()">전체화면 보기</a>
+                </div>
+                <div class="card-preview">
+                    <iframe src="design-01-saas.html" loading="lazy" sandbox="allow-same-origin allow-scripts allow-popups"></iframe>
+                </div>
+            </div>
+
+            <!-- Design 02 -->
+            <div class="card" onclick="openFullscreen('design-02-financial.html')">
+                <div class="card-header">
+                    <div class="card-label">
+                        <div class="card-number">02 · Financial Dashboard</div>
+                        <div class="card-title">파이낸셜 다크</div>
+                    </div>
+                    <a href="design-02-financial.html" target="_blank" class="card-link" onclick="event.stopPropagation()">전체화면 보기</a>
+                </div>
+                <div class="card-preview">
+                    <iframe src="design-02-financial.html" loading="lazy" sandbox="allow-same-origin allow-scripts allow-popups"></iframe>
+                </div>
+            </div>
+
+            <!-- Design 03 -->
+            <div class="card" onclick="openFullscreen('design-03-devtools.html')">
+                <div class="card-header">
+                    <div class="card-label">
+                        <div class="card-number">03 · Developer Tools</div>
+                        <div class="card-title">데브툴즈 모노</div>
+                    </div>
+                    <a href="design-03-devtools.html" target="_blank" class="card-link" onclick="event.stopPropagation()">전체화면 보기</a>
+                </div>
+                <div class="card-preview">
+                    <iframe src="design-03-devtools.html" loading="lazy" sandbox="allow-same-origin allow-scripts allow-popups"></iframe>
+                </div>
+            </div>
+
+            <!-- Design 04 -->
+            <div class="card" onclick="openFullscreen('design-04-warmbeige.html')">
+                <div class="card-header">
+                    <div class="card-label">
+                        <div class="card-number">04 · Warm Beige</div>
+                        <div class="card-title">럭셔리 베이지</div>
+                    </div>
+                    <a href="design-04-warmbeige.html" target="_blank" class="card-link" onclick="event.stopPropagation()">전체화면 보기</a>
+                </div>
+                <div class="card-preview">
+                    <iframe src="design-04-warmbeige.html" loading="lazy" sandbox="allow-same-origin allow-scripts allow-popups"></iframe>
+                </div>
+            </div>
+
+            <!-- Design 05 -->
+            <div class="card" onclick="openFullscreen('design-05-emerald.html')">
+                <div class="card-header">
+                    <div class="card-label">
+                        <div class="card-number">05 · Emerald SaaS</div>
+                        <div class="card-title">에메랄드 SaaS</div>
+                    </div>
+                    <a href="design-05-emerald.html" target="_blank" class="card-link" onclick="event.stopPropagation()">전체화면 보기</a>
+                </div>
+                <div class="card-preview">
+                    <iframe src="design-05-emerald.html" loading="lazy" sandbox="allow-same-origin allow-scripts allow-popups"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openFullscreen(filename) {
+            window.open(filename, '_blank');
+        }
+    </script>
+</body>
+</html>

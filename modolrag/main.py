@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
 from modolrag.api.middleware import setup_middleware
-from modolrag.api import ingest, search, graph, admin, collections
+from modolrag.api import ingest, search, graph, admin, collections, generate, apps
 
 tags_metadata = [
     {
@@ -27,6 +27,14 @@ tags_metadata = [
     {
         "name": "collections",
         "description": "Document collections. Group documents into searchable sets — search specific collections instead of all documents.",
+    },
+    {
+        "name": "generate",
+        "description": "RAG generation. Retrieve context from documents and generate answers with an LLM. Supports streaming via SSE.",
+    },
+    {
+        "name": "apps",
+        "description": "App Builder. Create custom LLM endpoints by selecting documents, configuring prompts, and generating dedicated chat APIs.",
     },
 ]
 
@@ -65,6 +73,8 @@ app.include_router(ingest.router)
 app.include_router(search.router)
 app.include_router(graph.router)
 app.include_router(collections.router)
+app.include_router(generate.router)
+app.include_router(apps.router)
 
 # Mount dashboard static files if they exist
 static_dir = Path(__file__).parent / "static"

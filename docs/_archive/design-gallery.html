@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ModolRAG Design Gallery</title>
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+  :root{
+    --bg:#0a0a0a;
+    --surface:#141414;
+    --border:#222;
+    --border-hover:#444;
+    --text:#e5e5e5;
+    --text-muted:#777;
+    --text-dim:#555;
+    --accent:#c8c8c8;
+    --radius:16px;
+  }
+
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+  }
+
+  .page{
+    max-width:1120px;
+    margin:0 auto;
+    padding:64px 24px 96px;
+  }
+
+  /* ── Header ── */
+  .header{
+    margin-bottom:72px;
+  }
+  .header h1{
+    font-size:clamp(28px,4vw,42px);
+    font-weight:700;
+    letter-spacing:-0.03em;
+    color:#fff;
+    margin-bottom:8px;
+  }
+  .header p{
+    font-size:15px;
+    color:var(--text-muted);
+    letter-spacing:-0.01em;
+  }
+
+  /* ── Section ── */
+  .section{margin-bottom:64px}
+  .section-label{
+    font-size:12px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--text-dim);
+    margin-bottom:24px;
+    padding-bottom:12px;
+    border-bottom:1px solid var(--border);
+  }
+
+  /* ── Grid ── */
+  .grid-2{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:20px;
+  }
+  .grid-3{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:20px;
+  }
+
+  @media(max-width:860px){
+    .grid-2,.grid-3{grid-template-columns:1fr}
+  }
+
+  /* ── Card ── */
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    overflow:hidden;
+    cursor:pointer;
+    transition:border-color .25s ease, transform .25s ease, box-shadow .25s ease;
+    position:relative;
+  }
+  .card:hover{
+    border-color:var(--border-hover);
+    transform:translateY(-3px);
+    box-shadow:0 8px 32px rgba(0,0,0,.4);
+  }
+
+  /* ── Iframe Preview ── */
+  .preview{
+    position:relative;
+    width:100%;
+    height:280px;
+    overflow:hidden;
+    background:#0e0e0e;
+    border-bottom:1px solid var(--border);
+  }
+  .preview iframe{
+    position:absolute;
+    top:0;left:0;
+    width:1440px;
+    height:900px;
+    transform:scale(0.375);
+    transform-origin:top left;
+    border:none;
+    pointer-events:none;
+  }
+  .grid-3 .preview{height:240px}
+  .grid-3 .preview iframe{
+    width:1440px;
+    height:900px;
+    transform:scale(0.24);
+  }
+
+  /* ── Card Info ── */
+  .card-info{
+    padding:20px 22px 22px;
+  }
+  .card-tag{
+    display:inline-block;
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:0.04em;
+    color:var(--text-dim);
+    background:rgba(255,255,255,.05);
+    padding:3px 8px;
+    border-radius:6px;
+    margin-bottom:10px;
+  }
+  .card-title{
+    font-size:17px;
+    font-weight:600;
+    color:#fff;
+    letter-spacing:-0.02em;
+    margin-bottom:4px;
+  }
+  .card-desc{
+    font-size:13px;
+    color:var(--text-muted);
+    line-height:1.5;
+    margin-bottom:16px;
+  }
+  .card-link{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:13px;
+    font-weight:500;
+    color:var(--accent);
+    text-decoration:none;
+    transition:color .2s;
+  }
+  .card-link:hover{color:#fff}
+  .card-link svg{
+    width:14px;height:14px;
+    transition:transform .2s;
+  }
+  .card:hover .card-link svg{
+    transform:translateX(2px);
+  }
+
+  /* ── Footer ── */
+  .footer{
+    margin-top:80px;
+    padding-top:24px;
+    border-top:1px solid var(--border);
+    text-align:center;
+    font-size:12px;
+    color:var(--text-dim);
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>ModolRAG Design Gallery</h1>
+    <p>모든 디자인 템플릿 미리보기</p>
+  </header>
+
+  <!-- Section 1: Full Prototypes -->
+  <section class="section">
+    <div class="section-label">풀 프로토타입 &mdash; Full Prototypes</div>
+    <div class="grid-2">
+
+      <div class="card" onclick="window.open('./design-sand-dune-full.html','_blank')">
+        <div class="preview">
+          <iframe src="./design-sand-dune-full.html" loading="lazy" sandbox="allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>
+        </div>
+        <div class="card-info">
+          <span class="card-tag">12</span>
+          <div class="card-title">Sand Dune</div>
+          <div class="card-desc">사막 모래 베이지 &mdash; Tailwind + Lucide 풀페이지 인터랙티브</div>
+          <span class="card-link">전체화면 보기 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h7v7"/><path d="M13 3 6 10"/></svg></span>
+        </div>
+      </div>
+
+      <div class="card" onclick="window.open('./design-notion-white-full.html','_blank')">
+        <div class="preview">
+          <iframe src="./design-notion-white-full.html" loading="lazy" sandbox="allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>
+        </div>
+        <div class="card-info">
+          <span class="card-tag">31</span>
+          <div class="card-title">Notion White</div>
+          <div class="card-desc">노션 화이트 &mdash; 클린 미니멀 RAG 인터페이스</div>
+          <span class="card-link">전체화면 보기 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h7v7"/><path d="M13 3 6 10"/></svg></span>
+        </div>
+      </div>
+
+      <div class="card" onclick="window.open('./design-linear-dark-full.html','_blank')">
+        <div class="preview">
+          <iframe src="./design-linear-dark-full.html" loading="lazy" sandbox="allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>
+        </div>
+        <div class="card-info">
+          <span class="card-tag">32</span>
+          <div class="card-title">Linear Dark</div>
+          <div class="card-desc">리니어 다크 &mdash; 프로덕트 도구 감성 다크 UI</div>
+          <span class="card-link">전체화면 보기 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h7v7"/><path d="M13 3 6 10"/></svg></span>
+        </div>
+      </div>
+
+      <div class="card" onclick="window.open('./design-vercel-clean-full.html','_blank')">
+        <div class="preview">
+          <iframe src="./design-vercel-clean-full.html" loading="lazy" sandbox="allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>
+        </div>
+        <div class="card-info">
+          <span class="card-tag">33</span>
+          <div class="card-title">Vercel Clean</div>
+          <div class="card-desc">버셀 클린 &mdash; 엣지 있는 모던 블랙 & 화이트</div>
+          <span class="card-link">전체화면 보기 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h7v7"/><path d="M13 3 6 10"/></svg></span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Section 2: Concept Collections -->
+  <section class="section">
+    <div class="section-label">컨셉 목업 컬렉션 &mdash; Concept Collections</div>
+    <div class="grid-3">
+
+      <div class="card" onclick="window.open('./design-concepts.html','_blank')">
+        <div class="preview">
+          <iframe src="./design-concepts.html" loading="lazy" sandbox="allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>
+        </div>
+        <div class="card-info">
+          <span class="card-tag">Vol.1</span>
+          <div class="card-title">Concept Collection Vol.1</div>
+          <div class="card-desc">테마 01~10 &middot; 10개 디자인</div>
+          <span class="card-link">전체화면 보기 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h7v7"/><path d="M13 3 6 10"/></svg></span>
+        </div>
+      </div>
+
+      <div class="card" onclick="window.open('./design-concepts-2.html','_blank')">
+        <div class="preview">
+          <iframe src="./design-concepts-2.html" loading="lazy" sandbox="allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>
+        </div>
+        <div class="card-info">
+          <span class="card-tag">Vol.2</span>
+          <div class="card-title">Concept Collection Vol.2</div>
+          <div class="card-desc">테마 11~30 &middot; 20개 디자인</div>
+          <span class="card-link">전체화면 보기 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h7v7"/><path d="M13 3 6 10"/></svg></span>
+        </div>
+      </div>
+
+      <div class="card" onclick="window.open('./design-concepts-3.html','_blank')">
+        <div class="preview">
+          <iframe src="./design-concepts-3.html" loading="lazy" sandbox="allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>
+        </div>
+        <div class="card-info">
+          <span class="card-tag">Vol.3</span>
+          <div class="card-title">Concept Collection Vol.3</div>
+          <div class="card-desc">테마 31~50 &middot; 20개 디자인</div>
+          <span class="card-link">전체화면 보기 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h7v7"/><path d="M13 3 6 10"/></svg></span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="footer">ModolRAG &middot; 7 design templates</footer>
+
+</div>
+</body>
+</html>
