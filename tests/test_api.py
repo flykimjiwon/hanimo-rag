@@ -77,6 +77,16 @@ class TestRouteMethodsAndPaths:
                     seen.add(key)
 
 
+class TestMiddleware:
+    def test_cors_middleware_present(self):
+        middleware_classes = [m.cls.__name__ for m in app.user_middleware]
+        assert "CORSMiddleware" in middleware_classes
+
+    def test_setup_middleware_callable(self):
+        from modolrag.api.middleware import setup_middleware
+        assert callable(setup_middleware)
+
+
 class TestModuleImports:
     def test_parsers(self):
         from modolrag.parsers import get_parser
