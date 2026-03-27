@@ -142,25 +142,35 @@ async def extract_entities_and_relations(
 
 def _parse_llm_json(text: str) -> dict | None:
     """Try to parse JSON from LLM output, handling markdown code blocks."""
+    if not text or not text.strip():
+        return None
+
     # Try direct parse
     try:
-        return json.loads(text)
+        result = json.loads(text)
+        return result if isinstance(result, dict) else None
     except json.JSONDecodeError:
         pass
 
-    # Try extracting from markdown code block
-    match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', text, re.DOTALL)
-    if match:
-        try:
-            return json.loads(match.group(1))
-        except json.JSONDecodeError:
-            pass
+    # Try extracting from markdown code block (greedy to handle nested blocks)
+    for pattern in [
+        r'```json\s*\n(.*?)\n\s*```',
+        r'```\s*\n(.*?)\n\s*```',
+    ]:
+        match = re.search(pattern, text, re.DOTALL)
+        if match:
+            try:
+                result = json.loads(match.group(1))
+                return result if isinstance(result, dict) else None
+            except json.JSONDecodeError:
+                pass
 
-    # Try finding JSON object
+    # Try finding JSON object — use greedy match for nested braces
     match = re.search(r'\{.*\}', text, re.DOTALL)
     if match:
         try:
-            return json.loads(match.group(0))
+            result = json.loads(match.group(0))
+            return result if isinstance(result, dict) else None
         except json.JSONDecodeError:
             pass
 

@@ -68,11 +68,27 @@ class TestParseLlmJson:
         from modolrag.core.extractor import _parse_llm_json
         assert _parse_llm_json("not json at all") is None
 
+    def test_empty_string_returns_none(self):
+        from modolrag.core.extractor import _parse_llm_json
+        assert _parse_llm_json("") is None
+        assert _parse_llm_json("   ") is None
+
+    def test_json_array_returns_none(self):
+        """Only dicts are valid, not arrays."""
+        from modolrag.core.extractor import _parse_llm_json
+        assert _parse_llm_json('[1, 2, 3]') is None
+
     def test_json_with_surrounding_text(self):
         from modolrag.core.extractor import _parse_llm_json
         text = 'Here is the result: {"entities": []} and some more text'
         result = _parse_llm_json(text)
         assert result == {"entities": []}
+
+    def test_nested_json_objects(self):
+        from modolrag.core.extractor import _parse_llm_json
+        text = '{"entities": [{"name": "X", "type": "concept"}], "relationships": []}'
+        result = _parse_llm_json(text)
+        assert len(result["entities"]) == 1
 
 
 class TestDataClasses:
