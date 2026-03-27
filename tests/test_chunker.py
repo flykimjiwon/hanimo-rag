@@ -124,6 +124,16 @@ class TestRecursiveChunkerEdgeCases:
         for ch in chunks:
             assert len(ch.content.strip()) > 0
 
+    def test_overlap_content_shared(self):
+        """Consecutive chunks should share overlap text."""
+        c = RecursiveChunker(chunk_size=60, chunk_overlap=15)
+        text = "Alpha bravo charlie. Delta echo foxtrot. Golf hotel india. Juliet kilo lima."
+        chunks = c.chunk(text)
+        if len(chunks) >= 2:
+            # Last N chars of chunk[0] should appear at start of chunk[1]
+            end_of_first = chunks[0].content[-10:]
+            assert end_of_first in chunks[1].content or len(chunks) == 1
+
     def test_only_whitespace_separators(self):
         c = RecursiveChunker(chunk_size=30, chunk_overlap=0)
         text = "   \n\n   \n   "
