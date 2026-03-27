@@ -62,9 +62,9 @@ class TestRouteMethodsAndPaths:
         rm = self._get_route_map()
         assert "GET" in rm.get("/api/documents", set())
 
-    def test_settings_is_get(self):
+    def test_settings_is_put(self):
         rm = self._get_route_map()
-        assert "GET" in rm.get("/api/settings", set())
+        assert "PUT" in rm.get("/api/settings", set())
 
     def test_no_duplicate_paths(self):
         """Each path+method combo should be unique."""
