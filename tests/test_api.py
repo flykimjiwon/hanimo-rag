@@ -165,3 +165,22 @@ class TestConfigDefaults:
         s = Settings()
         assert isinstance(s.EMBEDDING_DIMENSIONS, int)
         assert s.EMBEDDING_DIMENSIONS == 768
+
+    def test_clear_settings_cache(self):
+        from modolrag.config import get_settings, clear_settings
+        s1 = get_settings()
+        s2 = get_settings()
+        assert s1 is s2  # cached
+        clear_settings()
+        s3 = get_settings()
+        # After clear, still valid but may be a new instance
+        assert s3.EMBEDDING_PROVIDER in ("ollama", "openai")
+
+    def test_env_prefix(self):
+        from modolrag.config import Settings
+        assert Settings.model_config["env_prefix"] == "MODOLRAG_"
+
+    def test_embedding_provider_values(self):
+        from modolrag.config import Settings
+        s = Settings()
+        assert s.EMBEDDING_PROVIDER in ("ollama", "openai", "local")
