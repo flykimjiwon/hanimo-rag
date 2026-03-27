@@ -52,6 +52,46 @@ class TestPageChunker:
         assert chunks[0].content == "Page A"
 
 
+class TestRecursiveChunkerEdgeCases:
+    def test_unicode_text(self):
+        c = RecursiveChunker(chunk_size=100)
+        text = "한국어 텍스트입니다.\n\n두 번째 문단입니다.\n\n세 번째 문단."
+        chunks = c.chunk(text)
+        assert len(chunks) >= 1
+        assert all(isinstance(ch, Chunk) for ch in chunks)
+        combined = " ".join(ch.content for ch in chunks)
+        assert "한국어" in combined
+
+    def test_single_long_word(self):
+        """A single word longer than chunk_size must still be split."""
+        c = RecursiveChunker(chunk_size=20, chunk_overlap=0)
+        text = "A" * 100
+        chunks = c.chunk(text)
+        assert len(chunks) >= 2
+        combined = "".join(ch.content for ch in chunks)
+        assert len(combined) >= 100
+
+    def test_overlap_preserves_content(self):
+        """With overlap, no content should be lost."""
+        c = RecursiveChunker(chunk_size=50, chunk_overlap=10)
+        text = "Word " * 60
+        chunks = c.chunk(text)
+        assert len(chunks) >= 2
+        # Every chunk should have content
+        for ch in chunks:
+            assert len(ch.content.strip()) > 0
+
+    def test_only_whitespace_separators(self):
+        c = RecursiveChunker(chunk_size=30, chunk_overlap=0)
+        text = "   \n\n   \n   "
+        assert c.chunk(text) == []
+
+    def test_newline_only_text(self):
+        c = RecursiveChunker(chunk_size=50)
+        text = "\n" * 100
+        assert c.chunk(text) == []
+
+
 class TestFactory:
     def test_recursive(self):
         c = get_chunker("recursive", chunk_size=100)
