@@ -66,6 +66,23 @@ class TestParserFactory:
         assert isinstance(p, ParserBase)
 
 
+class TestParsedDocument:
+    def test_basic_creation(self):
+        doc = ParsedDocument(text="hello")
+        assert doc.text == "hello"
+        assert doc.metadata == {}
+        assert doc.pages == []
+
+    def test_with_pages(self):
+        doc = ParsedDocument(text="full text", pages=["page 1", "page 2"])
+        assert len(doc.pages) == 2
+
+    def test_with_metadata(self):
+        doc = ParsedDocument(text="x", metadata={"author": "test", "page_count": 5})
+        assert doc.metadata["author"] == "test"
+        assert doc.metadata["page_count"] == 5
+
+
 class TestMimeFromExtension:
     def test_known_extensions(self):
         assert mime_from_extension("doc.pdf") == "application/pdf"
