@@ -186,6 +186,22 @@ class TestSearchResult:
         assert r.file_name == ""
         assert r.original_name == ""
 
+    def test_roundtrip(self):
+        """to_dict -> from_dict should produce an equal object."""
+        original = SearchResult(
+            chunk_id="1", document_id="d1", content="hello",
+            score=0.95, match_type="vector", metadata={"page": 1}
+        )
+        restored = SearchResult.from_dict(original.to_dict())
+        assert restored == original
+
+    def test_from_dict_defaults(self):
+        """from_dict with minimal data should use defaults."""
+        r = SearchResult.from_dict({"chunk_id": "x"})
+        assert r.chunk_id == "x"
+        assert r.score == 0.0
+        assert r.match_type == "hybrid"
+
 
 class TestRRFImmutability:
     def test_input_not_mutated(self):

@@ -31,6 +31,20 @@ class SearchResult:
             "metadata": self.metadata,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "SearchResult":
+        """Deserialize from dictionary."""
+        return cls(
+            chunk_id=data.get("chunk_id", ""),
+            document_id=data.get("document_id", ""),
+            content=data.get("content", ""),
+            score=data.get("score", 0.0),
+            file_name=data.get("file_name", ""),
+            original_name=data.get("original_name", ""),
+            match_type=data.get("match_type", "hybrid"),
+            metadata=data.get("metadata", {}),
+        )
+
 
 def rrf_fuse(
     ranked_lists: list[list[dict]],
