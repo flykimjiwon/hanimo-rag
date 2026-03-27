@@ -53,6 +53,22 @@ class TestPageChunker:
         assert chunks[0].content == "Page A"
 
 
+class TestChunkDataclass:
+    def test_len(self):
+        c = Chunk(content="hello world", chunk_index=0)
+        assert len(c) == 11
+
+    def test_len_empty(self):
+        c = Chunk(content="", chunk_index=0)
+        assert len(c) == 0
+
+    def test_default_values(self):
+        c = Chunk(content="x", chunk_index=0)
+        assert c.chunk_level == 0
+        assert c.parent_index is None
+        assert c.metadata == {}
+
+
 class TestRecursiveChunkerValidation:
     def test_zero_chunk_size_raises(self):
         try:

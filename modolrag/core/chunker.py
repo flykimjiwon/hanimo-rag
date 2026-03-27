@@ -20,6 +20,10 @@ class Chunk:
     parent_index: int | None = None
     metadata: dict = field(default_factory=dict)
 
+    def __len__(self) -> int:
+        """Return length of content."""
+        return len(self.content)
+
 
 class ChunkerBase(ABC):
     @abstractmethod
