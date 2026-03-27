@@ -1,5 +1,6 @@
 """Test RRF fusion and hybrid search logic."""
-from modolrag.core.hybrid_search import rrf_fuse, SearchResult
+import pytest
+from modolrag.core.hybrid_search import rrf_fuse, SearchResult, hybrid_search
 
 
 class TestRRFFusion:
@@ -165,3 +166,21 @@ class TestSearchResult:
         assert r.match_type == "hybrid"
         assert r.file_name == ""
         assert r.original_name == ""
+
+
+class TestHybridSearchValidation:
+    @pytest.mark.asyncio
+    async def test_invalid_mode_raises(self):
+        with pytest.raises(ValueError, match="Invalid search mode"):
+            await hybrid_search(query_text="test", query_embedding=[0.1], mode="invalid")
+
+    @pytest.mark.asyncio
+    async def test_valid_modes_accepted(self):
+        """Valid modes should not raise ValueError (may fail on DB, but not on validation)."""
+        for mode in ("vector", "fts", "graph", "hybrid"):
+            try:
+                await hybrid_search(query_text="test", query_embedding=[0.1], mode=mode)
+            except ValueError:
+                pytest.fail(f"Mode '{mode}' should be valid but raised ValueError")
+            except Exception:
+                pass  # DB/network errors are expected without a running server

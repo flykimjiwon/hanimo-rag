@@ -92,6 +92,10 @@ async def hybrid_search(
         - "graph": Graph traversal only
         - "hybrid": All three fused with RRF
     """
+    valid_modes = ("vector", "fts", "graph", "hybrid")
+    if mode not in valid_modes:
+        raise ValueError(f"Invalid search mode '{mode}'. Must be one of: {valid_modes}")
+
     results_lists: list[list[dict]] = []
     rrf_weights: list[float] = []
 
