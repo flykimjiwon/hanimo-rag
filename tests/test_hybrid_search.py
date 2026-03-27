@@ -38,6 +38,49 @@ class TestRRFFusion:
         assert scores["1"] >= scores["3"] or scores["2"] >= scores["3"]
 
 
+class TestRRFEdgeCases:
+    def test_custom_weights(self):
+        """Weighted RRF should boost higher-weighted lists."""
+        list_a = [{"chunk_id": "a1"}, {"chunk_id": "a2"}]
+        list_b = [{"chunk_id": "b1"}, {"chunk_id": "b2"}]
+        result = rrf_fuse([list_a, list_b], weights=[2.0, 0.5])
+        scores = {r["chunk_id"]: r["rrf_score"] for r in result}
+        # list_a items (weight=2.0) should score higher than list_b (weight=0.5)
+        assert scores["a1"] > scores["b1"]
+
+    def test_duplicate_within_single_list(self):
+        """Duplicate chunk_ids in same list: last occurrence wins for item data."""
+        items = [{"chunk_id": "dup", "val": 1}, {"chunk_id": "dup", "val": 2}]
+        result = rrf_fuse([items])
+        assert len(result) == 1
+        assert result[0]["chunk_id"] == "dup"
+
+    def test_large_k_value(self):
+        """Large k dampens rank differences."""
+        items = [{"chunk_id": "x"}, {"chunk_id": "y"}]
+        result_small_k = rrf_fuse([items], k=1)
+        result_large_k = rrf_fuse([items], k=1000)
+        # With small k, score gap between rank 1 and 2 is larger
+        gap_small = result_small_k[0]["rrf_score"] - result_small_k[1]["rrf_score"]
+        gap_large = result_large_k[0]["rrf_score"] - result_large_k[1]["rrf_score"]
+        assert gap_small > gap_large
+
+    def test_single_item_per_list(self):
+        """Each list has one unique item — all should appear in result."""
+        lists = [[{"chunk_id": str(i)}] for i in range(5)]
+        result = rrf_fuse(lists)
+        assert len(result) == 5
+
+    def test_weights_shorter_than_lists(self):
+        """When weights list is shorter than ranked_lists, extra lists default to 1.0."""
+        list_a = [{"chunk_id": "a"}]
+        list_b = [{"chunk_id": "b"}]
+        result = rrf_fuse([list_a, list_b], weights=[0.5])
+        scores = {r["chunk_id"]: r["rrf_score"] for r in result}
+        # list_b gets default weight 1.0 > list_a weight 0.5
+        assert scores["b"] > scores["a"]
+
+
 class TestSearchResult:
     def test_dataclass(self):
         r = SearchResult(chunk_id="1", document_id="d1", content="hello", score=0.95, match_type="vector")
