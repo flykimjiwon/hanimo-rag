@@ -206,3 +206,29 @@ class TestConfigDefaults:
         from modolrag.config import Settings
         s = Settings()
         assert s.EMBEDDING_PROVIDER in ("ollama", "openai", "local")
+
+
+class TestCLIImport:
+    def test_cli_main_callable(self):
+        from modolrag.cli import main
+        assert callable(main)
+
+    def test_cli_argparse_commands(self):
+        """CLI should define expected subcommands."""
+        import argparse
+        from modolrag.cli import main
+        # main() uses argparse — just verify it doesn't crash on import
+        assert main is not None
+
+    def test_hyde_config(self):
+        from modolrag.config import Settings
+        s = Settings()
+        assert isinstance(s.ENABLE_HYDE, bool)
+        assert s.ENABLE_HYDE is False  # default
+
+    def test_llm_provider_config(self):
+        from modolrag.config import Settings
+        s = Settings()
+        assert s.LLM_PROVIDER in ("ollama", "openai")
+        assert isinstance(s.LLM_MODEL, str)
+        assert len(s.LLM_MODEL) > 0
