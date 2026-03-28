@@ -24,7 +24,7 @@ class Chunk:
         """Return length of content."""
         return len(self.content)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, object]:
         """Serialize to dictionary."""
         return {
             "content": self.content,
@@ -117,6 +117,7 @@ class RecursiveChunker(ChunkerBase):
         return [c for c in chunks if c.strip()]
 
     def _add_overlap(self, chunks: list[str]) -> list[str]:
+        """Prepend tail of previous chunk to each subsequent chunk for context overlap."""
         result = [chunks[0]]
         for i in range(1, len(chunks)):
             prev = chunks[i - 1]
@@ -210,7 +211,7 @@ class SemanticChunker(ChunkerBase):
         return dot / (norm_a * norm_b)
 
 
-def get_chunker(strategy: str = "recursive", **kwargs) -> ChunkerBase:
+def get_chunker(strategy: str = "recursive", **kwargs: object) -> ChunkerBase:
     """Factory function."""
     if strategy == "recursive":
         return RecursiveChunker(
