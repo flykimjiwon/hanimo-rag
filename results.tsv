@@ -1,0 +1,37 @@
+commit	tests_passed	tests_total	status	description
+baseline	45	45	keep	baseline - all tests passing
+3c14b7f	50	50	keep	add RRF edge case tests (weights, duplicates, large k)
+c29b7b2	55	55	keep	add chunker edge case tests (unicode, long word, overlap, whitespace)
+7f7aba2	64	64	keep	add extractor edge case tests (special chars, korean, parse_llm_json)
+f4e2159	66	66	keep	add top_k param to rrf_fuse for early truncation
+c00437f	69	69	keep	add SearchResult.to_dict() for API serialization
+e315e3e	73	74	discard	input validation broke test_newline_only_text (chunk_size=50 < default overlap=51)
+a09a29f	73	73	keep	add chunker input validation with overlap clamping
+37e02a5	79	79	keep	add API route method validation tests (GET/POST/PUT mapping)
+0bf341a	85	85	keep	add config defaults and parsed_api_keys tests
+100331c	88	88	keep	harden _parse_llm_json with empty/array guards and type checking
+d7bb03a	95	95	keep	add SemanticChunker and cosine_similarity tests
+12a42bf	96	96	keep	add custom id_key test for rrf_fuse
+ccf35f4	100	100	keep	add mime_from_extension utility and tests
+1d536c6	102	102	keep	filter empty/whitespace wikilinks in extract_wikilinks
+aedcf1e	106	106	keep	add factory tests for semantic strategy and custom params
+fe84b26	109	109	keep	add Chunk.__len__ and dataclass tests
+14c12a7	111	111	keep	add middleware CORS presence tests
+9d56a32	115	115	keep	add RRF math accuracy tests (formula verification)
+57226bf	118	118	keep	add clear_settings cache and env_prefix tests
+e91923b	121	121	keep	add ParsedDocument dataclass tests
+8a822b8	126	126	keep	add dataclass equality and default value tests for extractor
+b0ec36f	127	127	keep	add overlap content sharing verification test
+e36823d	129	129	keep	add mode validation to hybrid_search with ValueError
+cbadb4e	131	131	keep	add field preservation and first-occurrence tests for rrf_fuse
+68211df	133	133	keep	add immutability tests for rrf_fuse input/output
+caa7a61	137	137	keep	add PageChunker edge case tests (empty pages, mixed delimiters)
+3568d65	139	139	keep	add SearchResult.from_dict() and roundtrip test
+5aa0229	142	142	keep	add OpenAPI schema detail validation tests
+03c0814	143	143	keep	deduplicate wikilinks to prevent redundant relationships
+feb605d	147	147	keep	add CLI import and LLM/HyDE config tests
+2cab205	151	151	keep	add markdown frontmatter parsing and H2 split tests
+31e8aa2	152	152	keep	add separator priority test for RecursiveChunker
+77ac293	155	155	keep	add RRF stress tests (large lists, many overlapping, all same)
+7ba050f	158	158	keep	add markdown frontmatter metadata, encoding fallback, error tests
+efe6d24	159	159	keep	add Chunk.to_dict() serialization method
