@@ -35,3 +35,8 @@ feb605d	147	147	keep	add CLI import and LLM/HyDE config tests
 77ac293	155	155	keep	add RRF stress tests (large lists, many overlapping, all same)
 7ba050f	158	158	keep	add markdown frontmatter metadata, encoding fallback, error tests
 efe6d24	159	159	keep	add Chunk.to_dict() serialization method
+a3f7c9e	159	159	keep	fix all 17 ruff lint issues (F401, F541, F841, E401)
+7b51816	165	165	keep	add 6 async tests for SemanticChunker.embed_and_chunk
+21d7b93	170	170	keep	add 5 async tests for extract_entities_and_relations
+5dcdaaa	170	170	keep	improve type hints and docstrings in chunker.py
+d9ef148	177	177	keep	add 7 parser edge case tests (UTF-8, nonexistent file, isolation)
