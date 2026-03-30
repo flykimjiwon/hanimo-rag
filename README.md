@@ -181,7 +181,7 @@ MODOLRAG_OPENAI_API_KEY=sk-your-key-here
 MODOLRAG_EMBEDDING_MODEL=text-embedding-3-small
 # 주의: schema.sql의 halfvec(768)을 halfvec(1536)으로 변경 필요
 
-## API 엔드포인트 (16개)
+## API 엔드포인트 (25개)
 GET  /health                                # 헬스체크 (인증 불필요)
 POST /api/ingest                            # 문서 업로드 (multipart)
 GET  /api/documents                         # 문서 목록
@@ -198,6 +198,13 @@ GET  /api/graph                             # 지식 그래프
 GET  /api/graph/node/{id}                   # 노드 상세
 GET  /api/settings                          # 설정 조회
 PUT  /api/settings                          # 설정 수정
+POST /api/generate                          # RAG 생성 (SSE 스트리밍)
+POST /api/apps                              # 커스텀 앱 생성
+GET  /api/apps                              # 앱 목록
+GET  /api/apps/{id}                         # 앱 상세
+PUT  /api/apps/{id}                         # 앱 수정
+DELETE /api/apps/{id}                       # 앱 삭제
+POST /api/apps/{id}/chat                    # 앱으로 채팅
 
 ## 검색 모드
 - hybrid (기본): 벡터 + 키워드 + 그래프 → RRF 융합. 최고 품질
@@ -249,7 +256,7 @@ PUT  /api/settings                          # 설정 수정
 - [Architecture](#architecture)
 - [Collections (Document Sets)](#collections-document-sets)
 - [Search Modes](#search-modes)
-- [API Reference (16 Endpoints)](#api-reference)
+- [API Reference (25 Endpoints)](#api-reference)
 - [API Documentation (Swagger)](#api-documentation)
 - [Dashboard](#dashboard)
 - [Configuration](#configuration)
@@ -515,7 +522,7 @@ curl -X POST http://localhost:8009/api/search \
 
 ## API Reference
 
-### All 16 Endpoints
+### All 25 Endpoints
 
 #### Admin (no tag prefix)
 
@@ -548,6 +555,12 @@ Request body:
 }
 ```
 
+#### Generate (RAG)
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/generate` | Yes | Retrieve context + stream LLM response (SSE) |
+
 #### Collections
 
 | Method | Endpoint | Auth | Description |
@@ -565,6 +578,17 @@ Request body:
 |---|---|---|---|
 | `GET` | `/api/graph` | Yes | All nodes + edges (for visualization) |
 | `GET` | `/api/graph/node/{id}` | Yes | Node detail + 1-hop neighbors |
+
+#### Apps (Custom LLM Endpoints)
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/apps` | Yes | Create custom LLM endpoint (prompt, model, collection scoped) |
+| `GET` | `/api/apps` | Yes | List all app instances |
+| `GET` | `/api/apps/{id}` | Yes | Get app config & status |
+| `PUT` | `/api/apps/{id}` | Yes | Update app prompt/model/settings |
+| `DELETE` | `/api/apps/{id}` | Yes | Delete app instance |
+| `POST` | `/api/apps/{id}/chat` | Yes | Query custom app (uses app's prompt/collection) |
 
 #### Settings
 

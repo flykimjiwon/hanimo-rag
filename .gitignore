@@ -60,3 +60,19 @@ yarn-error.log
 # Static files (but keep .gitkeep)
 modolrag/static/*
 !modolrag/static/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# OS files
+Thumbs.db
+
+# Docker volumes
+postgres-data/
+
+# uv
+.python-version
+
+# Jupyter
+.ipynb_checkpoints/
