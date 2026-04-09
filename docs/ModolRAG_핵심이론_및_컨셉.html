@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ModolRAG - RAG 핵심이론 및 프로젝트 컨셉</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0e17; color: #c9d1d9; line-height: 1.8; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  h1 { font-size: 2.2rem; color: #58a6ff; margin-bottom: 8px; }
+  h2 { font-size: 1.5rem; color: #79c0ff; margin: 40px 0 16px; border-bottom: 2px solid #21262d; padding-bottom: 8px; }
+  h3 { font-size: 1.15rem; color: #d2a8ff; margin: 24px 0 10px; }
+  h4 { font-size: 1rem; color: #f0883e; margin: 16px 0 8px; }
+  .subtitle { color: #8b949e; margin-bottom: 32px; font-size: 1.1rem; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin: 14px 0; }
+  .card:hover { border-color: #58a6ff; }
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.95em; }
+  th { background: #21262d; color: #58a6ff; text-align: left; padding: 10px 14px; font-weight: 600; }
+  td { padding: 10px 14px; border-bottom: 1px solid #21262d; vertical-align: top; }
+  tr:hover td { background: #1c2128; }
+  code { background: #1c2128; color: #f0883e; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.9em; }
+  pre { background: #1c2128; border: 1px solid #30363d; border-radius: 6px; padding: 16px; margin: 12px 0; overflow-x: auto; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85em; color: #7ee787; line-height: 1.5; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; margin-right: 6px; }
+  .badge-green { background: #1b4332; color: #7ee787; }
+  .badge-blue { background: #0c2d6b; color: #58a6ff; }
+  .badge-purple { background: #2d1b69; color: #d2a8ff; }
+  .badge-orange { background: #4a2600; color: #f0883e; }
+  .badge-red { background: #4a0000; color: #f85149; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  @media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr; } }
+  .tip { background: #0c2d6b; border-left: 3px solid #58a6ff; padding: 14px 18px; border-radius: 0 6px 6px 0; margin: 14px 0; }
+  .warn { background: #4a2600; border-left: 3px solid #f0883e; padding: 14px 18px; border-radius: 0 6px 6px 0; margin: 14px 0; }
+  .success { background: #1b4332; border-left: 3px solid #7ee787; padding: 14px 18px; border-radius: 0 6px 6px 0; margin: 14px 0; }
+  a { color: #58a6ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .toc { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 24px; margin: 24px 0; columns: 2; }
+  @media (max-width: 640px) { .toc { columns: 1; } }
+  .toc a { display: block; padding: 3px 0; color: #8b949e; break-inside: avoid; }
+  .toc a:hover { color: #58a6ff; }
+  .highlight { background: linear-gradient(135deg, #0c2d6b 0%, #2d1b69 100%); border: 1px solid #58a6ff; border-radius: 8px; padding: 24px; margin: 20px 0; }
+  .stat { text-align: center; padding: 16px; }
+  .stat-number { font-size: 2rem; font-weight: 700; color: #58a6ff; }
+  .stat-label { font-size: 0.85rem; color: #8b949e; }
+  .analogy { background: #1b2733; border: 1px dashed #58a6ff; border-radius: 8px; padding: 16px; margin: 10px 0; font-style: italic; color: #8b949e; }
+  .analogy::before { content: "비유: "; font-weight: 700; color: #58a6ff; font-style: normal; }
+  .term { background: #21262d; border-radius: 4px; padding: 8px 12px; margin: 6px 0; display: inline-block; }
+  .term strong { color: #f0883e; }
+  .term span { color: #7ee787; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>ModolRAG</h1>
+<p class="subtitle">PostgreSQL 하나로 돌아가는 하이브리드 RAG 엔진 &mdash; 핵심 이론, 프로젝트 설명, 구조 가이드</p>
+
+<div class="highlight">
+  <div class="grid" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+    <div class="stat"><div class="stat-number">3</div><div class="stat-label">검색 방법<br>(의미검색 + 키워드검색 + 관계검색)</div></div>
+    <div class="stat"><div class="stat-number">6</div><div class="stat-label">문서 종류 지원<br>(PDF, Word, Excel, PPT, MD, TXT)</div></div>
+    <div class="stat"><div class="stat-number">1</div><div class="stat-label">필요한 DB<br>(PostgreSQL 하나)</div></div>
+    <div class="stat"><div class="stat-number">0</div><div class="stat-label">외부 프레임워크<br>의존성 없음</div></div>
+  </div>
+</div>
+
+<!-- 용어 사전 -->
+<div class="card" style="border-color:#58a6ff;">
+  <h3 style="margin-top:0;">용어 번역표 (이 문서에서 쓰는 쉬운 말)</h3>
+  <table>
+    <tr><th>원래 용어</th><th>이 문서에서 쓰는 말</th><th>비유</th></tr>
+    <tr><td>Chunking (청킹)</td><td><strong>쪼개기</strong></td><td>긴 책을 챕터별로 나누는 것</td></tr>
+    <tr><td>Embedding (임베딩)</td><td><strong>숫자로 바꾸기</strong></td><td>글의 "느낌"을 좌표로 찍는 것</td></tr>
+    <tr><td>Vector Search</td><td><strong>의미 검색</strong></td><td>"비슷한 느낌의 글" 찾기</td></tr>
+    <tr><td>Full-Text Search (FTS)</td><td><strong>키워드 검색</strong></td><td>Ctrl+F처럼 정확한 단어 찾기</td></tr>
+    <tr><td>Knowledge Graph</td><td><strong>관계망</strong></td><td>인물관계도처럼 "누가 누구와 연결" 표시</td></tr>
+    <tr><td>RRF (Reciprocal Rank Fusion)</td><td><strong>순위 합산</strong></td><td>여러 검색 결과의 순위를 합쳐서 최종 순위 결정</td></tr>
+    <tr><td>HyDE</td><td><strong>가상 답변 기법</strong></td><td>"이런 답이 있을 것이다" 가짜 답을 먼저 만들어서 진짜 답 찾기</td></tr>
+    <tr><td>Reranking (리랭킹)</td><td><strong>재정렬</strong></td><td>1차 합격자를 다시 면접 보는 것</td></tr>
+    <tr><td>Retrieval (리트리벌)</td><td><strong>검색/찾기</strong></td><td>도서관에서 관련 책 꺼내오기</td></tr>
+    <tr><td>Generation (제너레이션)</td><td><strong>답변 만들기</strong></td><td>찾아온 자료 보고 리포트 쓰기</td></tr>
+    <tr><td>Pipeline (파이프라인)</td><td><strong>처리 흐름</strong></td><td>공장 컨베이어 벨트처럼 순서대로 처리</td></tr>
+    <tr><td>Token (토큰)</td><td><strong>글자 단위</strong></td><td>AI가 세는 글자/단어 조각</td></tr>
+    <tr><td>Hallucination (환각)</td><td><strong>지어내기</strong></td><td>AI가 모르면서 아는 척 답하는 것</td></tr>
+    <tr><td>HNSW Index</td><td><strong>빠른 검색 목록</strong></td><td>도서관 색인 카드처럼 빠르게 찾는 구조</td></tr>
+    <tr><td>Namespace</td><td><strong>구역</strong></td><td>도서관의 "과학 코너", "문학 코너"처럼 분류</td></tr>
+    <tr><td>Recursive CTE</td><td><strong>연쇄 탐색</strong></td><td>"친구의 친구의 친구"를 따라가며 찾기</td></tr>
+    <tr><td>SSE Streaming</td><td><strong>실시간 글자 흘려보내기</strong></td><td>ChatGPT처럼 글자가 하나씩 나오는 것</td></tr>
+  </table>
+</div>
+
+<div class="toc">
+  <strong style="display:block; margin-bottom:12px; column-span:all;">목차</strong>
+  <a href="#part1">Part 1. RAG가 뭔가요?</a>
+  <a href="#s1-1">&nbsp;&nbsp;1.1 RAG = 찾아서 답하기</a>
+  <a href="#s1-2">&nbsp;&nbsp;1.2 RAG의 발전 단계</a>
+  <a href="#s1-3">&nbsp;&nbsp;1.3 문서 쪼개기 (Chunking)</a>
+  <a href="#s1-4">&nbsp;&nbsp;1.4 글을 숫자로 바꾸기 (Embedding)</a>
+  <a href="#s1-5">&nbsp;&nbsp;1.5 검색하는 3가지 방법</a>
+  <a href="#s1-6">&nbsp;&nbsp;1.6 검색 결과 합치기 (RRF)</a>
+  <a href="#s1-7">&nbsp;&nbsp;1.7 가상 답변 기법 (HyDE)</a>
+  <a href="#s1-8">&nbsp;&nbsp;1.8 관계망 검색 (Graph RAG)</a>
+  <a href="#s1-9">&nbsp;&nbsp;1.9 검색 결과 재정렬 (Reranking)</a>
+  <a href="#s1-10">&nbsp;&nbsp;1.10 질문 바꿔서 다시 찾기</a>
+  <a href="#s1-11">&nbsp;&nbsp;1.11 최신 연구 논문들</a>
+  <a href="#part2">Part 2. ModolRAG는 어떤 프로젝트인가?</a>
+  <a href="#s2-1">&nbsp;&nbsp;2.1 핵심 철학</a>
+  <a href="#s2-2">&nbsp;&nbsp;2.2 왜 PostgreSQL 하나만?</a>
+  <a href="#s2-3">&nbsp;&nbsp;2.3 전체 구조</a>
+  <a href="#s2-4">&nbsp;&nbsp;2.4 처리 흐름</a>
+  <a href="#s2-5">&nbsp;&nbsp;2.5 어떤 이론이 적용됐나</a>
+  <a href="#s2-6">&nbsp;&nbsp;2.6 갈아끼울 수 있는 설계</a>
+  <a href="#s2-7">&nbsp;&nbsp;2.7 다른 오픈소스와 비교</a>
+  <a href="#part3">Part 3. 코드에서 발견된 문제와 수정 내역</a>
+</div>
+
+<!-- ============================================================ -->
+<!-- PART 1 -->
+<!-- ============================================================ -->
+
+<h2 id="part1">Part 1. RAG가 뭔가요?</h2>
+
+<h3 id="s1-1">1.1 RAG = "찾아서 답하기"</h3>
+<div class="card">
+  <p><strong>RAG (Retrieval-Augmented Generation)</strong>는 AI가 답변하기 전에 먼저 관련 자료를 찾아보고, 그 자료를 근거로 답하는 방식입니다.</p>
+
+  <div class="analogy">도서관에서 리포트 쓰는 것과 같습니다. 머릿속 기억만으로 쓰면 틀릴 수 있지만, 관련 책을 먼저 찾아서 읽고 쓰면 정확한 리포트가 나옵니다.</div>
+
+  <pre>
+사용자 질문: "pgvector 성능은?"
+    ↓
+  [찾기] → DB에서 관련 문서 조각 3~5개 꺼내옴
+    ↓
+  [조합] → "이 자료를 참고해서 답변해" + 찾은 자료 → AI에게 전달
+    ↓
+  [답변] → 근거 있는 답변 생성
+  </pre>
+
+  <p style="margin-top:12px;"><strong>왜 필요한가?</strong></p>
+  <ul style="padding-left:20px;">
+    <li>AI의 학습 데이터가 오래됨 → <strong>최신 정보를 실시간으로 제공</strong></li>
+    <li>AI가 모르면서 아는 척 답하는 것(지어내기) 방지 → <strong>근거 기반 답변</strong></li>
+    <li>회사 내부 문서, 법률, 의료 같은 <strong>전문 지식 주입</strong></li>
+    <li>AI 모델을 다시 학습시키지 않고도 <strong>자료만 업데이트하면 됨</strong></li>
+  </ul>
+</div>
+
+<h3 id="s1-2">1.2 RAG의 발전 단계</h3>
+
+<div class="analogy">요리에 비유하면: 1세대는 "레시피대로만", 2세대는 "재료 손질도 꼼꼼히", 3세대는 "레고처럼 조립식 주방", 4세대는 "AI 셰프가 알아서 판단하며 요리"</div>
+
+<table>
+  <tr><th>세대</th><th>이름</th><th>쉽게 말하면</th><th>한계</th></tr>
+  <tr>
+    <td><span class="badge badge-green">1세대</span></td>
+    <td><strong>Naive RAG</strong><br>(기본형)</td>
+    <td>문서 쪼개기 → 숫자로 바꾸기 → 비슷한 거 찾기 → AI에게 주기. <strong>그냥 순서대로 하는 것</strong></td>
+    <td>질문과 답변의 표현이 다르면 못 찾음</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-blue">2세대</span></td>
+    <td><strong>Advanced RAG</strong><br>(개선형)</td>
+    <td>찾기 전에 <strong>질문을 다듬고</strong>, 찾은 후에 <strong>결과를 걸러내는</strong> 단계 추가</td>
+    <td>여전히 순서가 고정됨</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-purple">3세대</span></td>
+    <td><strong>Modular RAG</strong><br>(조립식)</td>
+    <td><strong>레고 블록처럼</strong> 각 단계를 떼었다 붙였다 교체 가능. 상황에 따라 다른 조합 사용</td>
+    <td>설계가 복잡해짐</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-orange">4세대</span></td>
+    <td><strong>Agentic RAG</strong><br>(자율형)</td>
+    <td>AI가 <strong>스스로 판단</strong>해서 "지금 검색해야 하나?", "결과가 충분한가?", "다시 찾아볼까?" 결정</td>
+    <td>비용, 속도</td>
+  </tr>
+</table>
+
+<div class="tip">
+  <strong>ModolRAG의 위치:</strong> 2세대(개선형) + 3세대(조립식) 사이. 의미검색+키워드검색+관계망 3종 검색, 가상 답변 기법, 의미 기반 쪼개기 등을 구현하면서, 부품(Embedder, LLM, Chunker 등)을 자유롭게 교체할 수 있는 구조입니다.
+</div>
+
+<h3 id="s1-3">1.3 문서 쪼개기 (Chunking)</h3>
+<p>긴 문서를 AI가 소화할 수 있는 <strong>작은 조각으로 나누는 것</strong>. 검색 품질의 기초를 결정합니다.</p>
+
+<div class="analogy">책 한 권을 통째로 들고 다닐 수 없으니, 필요한 페이지만 뽑아서 가져가는 것과 같습니다. 어떻게 나누냐에 따라 "필요한 내용이 잘리는지" vs "필요 없는 내용이 끼는지"가 달라집니다.</div>
+
+<table>
+  <tr><th>방법</th><th>쉽게 말하면</th><th>장점</th><th>단점</th><th>ModolRAG</th></tr>
+  <tr>
+    <td><strong>글자 수 기준</strong></td>
+    <td>500자마다 자르기. 잘리는 부분은 조금 겹치게</td>
+    <td>단순, 빠름</td>
+    <td>문장 중간에 잘릴 수 있음</td>
+    <td>&mdash;</td>
+  </tr>
+  <tr>
+    <td><strong>문단/문장 기준<br>(재귀적)</strong></td>
+    <td>먼저 문단으로 나누고, 문단이 너무 길면 문장으로, 문장도 길면 단어로 나눔</td>
+    <td>문맥이 잘 보존됨</td>
+    <td>구분자에 의존</td>
+    <td><span class="badge badge-green">적용됨</span></td>
+  </tr>
+  <tr>
+    <td><strong>의미 기준<br>(시맨틱)</strong></td>
+    <td>연속된 문장의 <strong>"느낌이 달라지는 지점"</strong>에서 자름</td>
+    <td>주제별로 깔끔하게 나뉨</td>
+    <td>모든 문장을 숫자로 바꿔야 해서 느림</td>
+    <td><span class="badge badge-green">적용됨</span></td>
+  </tr>
+  <tr>
+    <td><strong>페이지 기준</strong></td>
+    <td>PDF의 페이지 단위로 자름</td>
+    <td>원본 구조 유지</td>
+    <td>페이지 길이가 제각각</td>
+    <td><span class="badge badge-green">적용됨</span></td>
+  </tr>
+  <tr>
+    <td><strong>RAPTOR<br>(계층형)</strong></td>
+    <td>조각들을 묶어서 <strong>요약본을 만들고, 요약본끼리 또 묶어서</strong> 트리 구조로 만듦</td>
+    <td>큰 그림도 작은 디테일도 검색 가능</td>
+    <td>AI 요약 비용 발생</td>
+    <td>&mdash;</td>
+  </tr>
+</table>
+
+<h3 id="s1-4">1.4 글을 숫자로 바꾸기 (Embedding)</h3>
+<p>글의 <strong>"의미"를 숫자 좌표로 변환</strong>하는 것. 이래야 컴퓨터가 "이 글과 저 글이 비슷한지" 계산할 수 있습니다.</p>
+
+<div class="analogy">지도에 핀 꽂기와 같습니다. "강아지 산책"이라는 글과 "반려견 운동"이라는 글은 단어는 다르지만 의미가 비슷하니까, 지도에서 가까운 곳에 핀이 꽂힙니다. "주식 투자"는 의미가 다르니 멀리 떨어져 꽂힙니다.</div>
+
+<div class="grid">
+  <div class="card">
+    <h4>의미 기반 (Dense)</h4>
+    <p>AI 모델이 글 전체의 <strong>"느낌"을 하나의 좌표</strong>로 압축</p>
+    <p><strong>잘하는 것:</strong> "비슷한 뜻의 다른 표현" 찾기</p>
+    <p><strong>못하는 것:</strong> 정확한 단어 매칭 (제품명, 코드 등)</p>
+    <p><span class="badge badge-green">ModolRAG: Ollama + OpenAI 지원</span></p>
+  </div>
+  <div class="card">
+    <h4>키워드 기반 (Sparse)</h4>
+    <p>어떤 <strong>단어가 몇 번 나오는지</strong>를 기반으로 점수 계산 (BM25 방식)</p>
+    <p><strong>잘하는 것:</strong> 정확한 단어, 제품명, 코드 검색</p>
+    <p><strong>못하는 것:</strong> 같은 뜻 다른 단어 ("차량" vs "자동차")</p>
+    <p><span class="badge badge-green">ModolRAG: PostgreSQL 내장 검색</span></p>
+  </div>
+</div>
+
+<div class="tip">
+  <strong>핵심:</strong> 의미 기반 + 키워드 기반을 <strong>합치면</strong> 단독보다 검색 정확도가 18~22% 향상됩니다. ModolRAG는 여기에 관계망 검색까지 3종 결합합니다.
+</div>
+
+<h3 id="s1-5">1.5 검색하는 3가지 방법</h3>
+
+<div class="grid-3">
+  <div class="card" style="border-color:#7ee787;">
+    <h4>의미 검색 (Vector)</h4>
+    <p>글의 "느낌"이 비슷한 문서를 찾음</p>
+    <div class="analogy">"이것과 비슷한 느낌의 글 찾아줘"</div>
+    <p><strong>예:</strong> "강아지 건강" 검색 → "반려견 질병 예방" 찾아줌</p>
+  </div>
+  <div class="card" style="border-color:#58a6ff;">
+    <h4>키워드 검색 (FTS)</h4>
+    <p>정확한 단어가 포함된 문서를 찾음</p>
+    <div class="analogy">Ctrl+F처럼 정확한 단어 찾기</div>
+    <p><strong>예:</strong> "pgvector" 검색 → 정확히 "pgvector"가 적힌 문서</p>
+  </div>
+  <div class="card" style="border-color:#d2a8ff;">
+    <h4>관계망 검색 (Graph)</h4>
+    <p>사람/개념/사물 간의 연결 관계를 따라가며 찾음</p>
+    <div class="analogy">"친구의 친구"를 찾는 것. A→B→C 연결을 따라감</div>
+    <p><strong>예:</strong> "이 프로젝트의 담당자의 부서는?" → 관계 추적</p>
+  </div>
+</div>
+
+<h3 id="s1-6">1.6 검색 결과 합치기 (RRF - 순위 합산)</h3>
+<div class="card">
+  <p>의미 검색, 키워드 검색, 관계망 검색 — 3가지 방법으로 각각 검색하면 결과 3개가 나옵니다. 이걸 <strong>하나의 최종 순위로 합치는 방법</strong>이 RRF입니다.</p>
+
+  <div class="analogy">3명의 심사위원이 각자 후보를 순위 매긴 뒤, 세 명의 순위를 합산해서 최종 당선자를 뽑는 것과 같습니다. 한 심사위원이 100점 만점, 다른 심사위원이 10점 만점이어도 상관없이 "몇 등인가"만 봅니다.</div>
+
+  <pre>
+점수 계산:  각 문서의 점수 = 합계( 1 / (60 + 순위) )
+
+예시: 문서 A가 의미검색 1등, 키워드검색 3등, 관계망 검색 2등이면
+ = 1/(60+1) + 1/(60+3) + 1/(60+2)
+ = 0.0164 + 0.0159 + 0.0161 = 0.0484  ← 높은 점수!
+  </pre>
+  <p><strong>장점:</strong> 각 검색 방법의 점수 단위가 달라도 상관없이 공정하게 합칠 수 있음</p>
+  <p><span class="badge badge-green">ModolRAG 적용</span> 3개 검색 결과를 가중치 있는 순위 합산으로 결합</p>
+</div>
+
+<h3 id="s1-7">1.7 가상 답변 기법 (HyDE)</h3>
+<div class="card">
+  <p>질문을 그대로 검색하는 대신, AI에게 <strong>"이 질문의 답이 뭘까?" 가짜 답을 먼저 만들게 하고</strong>, 그 가짜 답과 비슷한 진짜 문서를 찾는 기법.</p>
+
+  <div class="analogy">수배범을 찾을 때 "키 180cm 남성"이라는 설명 대신, 몽타주(가상 얼굴)를 먼저 그려서 그 얼굴과 비슷한 사람을 찾는 것과 같습니다.</div>
+
+  <pre>
+질문: "pgvector 성능은?"
+    ↓ AI가 가상 답변 생성
+가짜 답: "pgvector는 HNSW 알고리즘으로 초당 수만 건 검색이 가능하며..."
+    ↓ 이 가짜 답을 숫자로 변환
+가짜 답의 좌표로 진짜 문서 검색 → 더 정확한 결과!
+  </pre>
+  <p><strong>왜 효과적?</strong> 짧은 질문보다 긴 가짜 답이 진짜 답변 문서와 "느낌"이 더 비슷하기 때문</p>
+  <p><span class="badge badge-green">ModolRAG 적용</span> <code>core/hyde.py</code></p>
+</div>
+
+<h3 id="s1-8">1.8 관계망 검색 (Graph RAG)</h3>
+<div class="card">
+  <p>문서에서 <strong>사람, 개념, 제품 같은 "것들"(엔티티)과 그것들 사이의 "관계"를 뽑아내서</strong> 인물관계도 같은 그래프를 만들고, 이 관계를 따라가며 검색하는 방식.</p>
+
+  <div class="analogy">위키백과의 하이퍼링크와 같습니다. "서울" 문서에서 "한국" 링크를 클릭하고, "한국"에서 "대통령" 링크를 클릭하면 — 이렇게 연결을 따라가면 직접 검색으로는 못 찾을 정보도 찾을 수 있습니다.</div>
+
+  <h4>처리 과정</h4>
+  <pre>
+문서 조각 → AI가 읽고 "것들"과 "관계" 추출 → 관계도 저장
+                                                    ↓
+질문 → 질문과 가장 관련 있는 "것" 찾기 → 그 "것"의 친구/친구의 친구 탐색 → 결과
+  </pre>
+
+  <h4>언제 쓰면 좋나?</h4>
+  <table>
+    <tr><th>상황</th><th>의미 검색만</th><th>관계망 검색</th></tr>
+    <tr><td>"매출 보고서 보여줘" (단순 조회)</td><td><span class="badge badge-green">충분</span></td><td>과잉</td></tr>
+    <tr><td>"이 결재를 승인한 사람의 부서장은?" (연결 추적)</td><td>어려움</td><td><span class="badge badge-green">적합</span></td></tr>
+    <tr><td>"전체 문서에서 주요 주제 3개는?" (전체 요약)</td><td>어려움</td><td><span class="badge badge-green">적합</span></td></tr>
+  </table>
+
+  <p style="margin-top:12px;"><span class="badge badge-green">ModolRAG 적용</span> AI 기반 관계 추출 + "친구의 친구" 2단계 탐색 + [[위키링크]] 자동 인식</p>
+</div>
+
+<h3 id="s1-9">1.9 검색 결과 재정렬 (Reranking)</h3>
+<div class="card">
+  <p>1차 검색으로 후보 50~100개를 빠르게 골라낸 뒤, <strong>더 정밀한 AI 모델로 상위 10개를 다시 순위 매기는 것</strong>.</p>
+
+  <div class="analogy">서류 심사(1차)로 50명 합격시킨 뒤, 면접(2차)으로 최종 10명을 뽑는 것과 같습니다. 서류 심사는 빠르지만 대략적이고, 면접은 느리지만 정확합니다.</div>
+
+  <pre>
+[추천 흐름]
+키워드검색 + 의미검색 → 순위 합산(RRF) → 재정렬(상위 10개 정밀 평가) → AI에게 전달
+  </pre>
+  <p><span class="badge badge-orange">ModolRAG 미적용</span> &mdash; 향후 추가 예정</p>
+</div>
+
+<h3 id="s1-10">1.10 질문 바꿔서 다시 찾기 (Query Transformation)</h3>
+<table>
+  <tr><th>방법</th><th>쉽게 말하면</th><th>예시</th></tr>
+  <tr>
+    <td><strong>여러 버전으로 질문<br>(Multi-Query)</strong></td>
+    <td>같은 질문을 <strong>다양한 표현으로 바꿔서</strong> 각각 검색. 결과 합침</td>
+    <td>"RAG 성능" → "RAG 정확도", "RAG 속도", "RAG 벤치마크" 3가지로 검색</td>
+  </tr>
+  <tr>
+    <td><strong>질문 쪼개기<br>(Decomposition)</strong></td>
+    <td>복잡한 질문을 <strong>쉬운 소질문 여러 개</strong>로 나눔</td>
+    <td>"A와 B 비교" → "A는?", "B는?" 각각 찾고 합침</td>
+  </tr>
+  <tr>
+    <td><strong>한 발짝 물러서기<br>(Step-Back)</strong></td>
+    <td>너무 구체적인 질문을 <strong>한 단계 넓은 질문</strong>으로 바꿈</td>
+    <td>"아이폰 주사율" → "아이폰 기술 사양" (더 넓은 문서를 찾을 수 있음)</td>
+  </tr>
+  <tr>
+    <td><strong>가상 답변 (HyDE)</strong></td>
+    <td>질문을 가짜 답변으로 바꿔서 검색 (위 1.7 참조)</td>
+    <td>짧은 질문 → 긴 가짜 답변 → 진짜 답변과 비슷한 느낌으로 검색</td>
+  </tr>
+</table>
+
+<h3 id="s1-11">1.11 최신 연구 논문들</h3>
+
+<div class="grid">
+  <div class="card">
+    <h4>RAPTOR (2024, 스탠포드)</h4>
+    <p>문서 조각들을 <strong>묶어서 요약 → 요약을 또 묶어서 요약</strong>하여 트리(나무) 구조를 만듦. 세부 내용도, 전체 요약도 모두 검색 가능.</p>
+    <div class="analogy">회사 보고서의 "요약본 → 팀별 보고서 → 개인 보고서" 계층 구조와 같습니다.</div>
+    <p><strong>성과:</strong> 정확도 20% 향상</p>
+  </div>
+  <div class="card">
+    <h4>CRAG - 교정형 RAG (2024)</h4>
+    <p>검색 결과가 <strong>좋은지 나쁜지 스스로 판단</strong>하고, 나쁘면 웹 검색으로 보완.</p>
+    <div class="analogy">오픈북 시험에서 찾은 자료가 답과 안 맞으면, 다른 책을 찾아보는 것.</div>
+    <p>좋으면 그대로 사용 / 나쁘면 웹 검색 / 애매하면 둘 다 합침</p>
+  </div>
+  <div class="card">
+    <h4>Self-RAG (2023)</h4>
+    <p>AI가 <strong>"지금 검색이 필요한가?"를 스스로 판단</strong>. 쉬운 질문은 바로 답하고, 어려운 질문만 검색.</p>
+    <div class="analogy">선생님이 학생 질문에 "이건 내가 아니까 바로 답" vs "이건 교과서 확인하고 답할게" 구분하는 것.</div>
+  </div>
+  <div class="card">
+    <h4>Adaptive RAG (2024)</h4>
+    <p>질문 난이도에 따라 <strong>검색 전략을 다르게</strong> 적용. 쉬우면 검색 안 함, 보통이면 1번 검색, 어려우면 여러 번 반복 검색.</p>
+    <div class="analogy">네비게이션이 "길이 단순하면 안내 안 하고, 복잡한 교차로만 안내하는 것"과 같습니다.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PART 2 -->
+<!-- ============================================================ -->
+
+<h2 id="part2">Part 2. ModolRAG는 어떤 프로젝트인가?</h2>
+
+<h3 id="s2-1">2.1 핵심 철학</h3>
+<div class="highlight">
+  <h4 style="color:#7ee787; margin-top:0;">"PostgreSQL 하나로 전부 한다"</h4>
+  <p>보통 RAG를 만들려면 여러 가지 서비스를 따로 깔아야 합니다. ModolRAG는 <strong>PostgreSQL 하나</strong>에 전부 넣었습니다.</p>
+
+  <div class="analogy" style="background:#0d1b2a;">다른 RAG: 냉장고 따로, 오븐 따로, 전자레인지 따로 사서 주방 구성.<br>ModolRAG: 냉장고+오븐+전자레인지 일체형 하나만 사면 끝.</div>
+
+  <div class="grid" style="margin-top:16px;">
+    <div>
+      <strong style="color:#f85149;">보통 RAG 스택 (4개 서비스):</strong>
+      <pre style="border-color:#f85149;">
+PostgreSQL (기본 데이터)
++ Pinecone (의미 검색용)
++ Elasticsearch (키워드 검색용)
++ Neo4j (관계 검색용)
+= 4개를 각각 설치/관리</pre>
+    </div>
+    <div>
+      <strong style="color:#7ee787;">ModolRAG (1개 서비스):</strong>
+      <pre style="border-color:#7ee787;">
+PostgreSQL 하나에 전부 포함
+  - pgvector 확장 (의미 검색)
+  - 내장 tsvector (키워드 검색)
+  - 내장 SQL (관계 검색)
+= 1개만 관리하면 끝</pre>
+    </div>
+  </div>
+</div>
+
+<table>
+  <tr><th>핵심 가치</th><th>쉽게 말하면</th></tr>
+  <tr><td><strong>관리 단순</strong></td><td>PostgreSQL 하나만 운영. 백업도 모니터링도 1개만</td></tr>
+  <tr><td><strong>데이터 안전</strong></td><td>의미검색 데이터와 관계망 데이터가 같은 DB → 동시에 저장/취소 가능 (돈 이체처럼 "보내기+받기"가 동시에 되거나, 둘 다 안 되거나)</td></tr>
+  <tr><td><strong>설치 간편</strong></td><td><code>pip install modolrag</code> 한 줄이면 끝</td></tr>
+  <tr><td><strong>어디든 붙임</strong></td><td>Supabase, AWS RDS 등 표준 PostgreSQL이면 다 됨</td></tr>
+  <tr><td><strong>의존성 없음</strong></td><td>LangChain, LlamaIndex 같은 무거운 프레임워크 없이 직접 구현</td></tr>
+  <tr><td><strong>2가지 사용법</strong></td><td>독립 서버(REST API)로도, 라이브러리(import)로도 사용 가능</td></tr>
+</table>
+
+<h3 id="s2-2">2.2 왜 PostgreSQL 하나만?</h3>
+<div class="card">
+  <table>
+    <tr><th>기능</th><th>PostgreSQL에서 어떻게?</th><th>전용 제품 대비</th></tr>
+    <tr>
+      <td>의미 검색</td>
+      <td><code>pgvector</code> 확장 + 빠른 검색 목록(HNSW) + 절반 크기 저장(halfvec)</td>
+      <td>Pinecone/Weaviate와 비슷한 정확도. 수천만 건까지 실용적</td>
+    </tr>
+    <tr>
+      <td>키워드 검색</td>
+      <td>PostgreSQL 내장 기능 (tsvector). 별도 설치 불필요</td>
+      <td>Elasticsearch 대비 관리 비용 0. 중소 규모에 충분</td>
+    </tr>
+    <tr>
+      <td>관계 탐색</td>
+      <td>SQL로 "친구의 친구" 연쇄 탐색 (Recursive CTE)</td>
+      <td>Neo4j보다 기능은 적지만, 2단계 탐색에는 충분</td>
+    </tr>
+    <tr>
+      <td>데이터 안전</td>
+      <td>PostgreSQL 기본 기능</td>
+      <td>여러 DB 쓰면 "A는 저장됐는데 B는 안 됐다" 문제 발생</td>
+    </tr>
+  </table>
+</div>
+
+<h3 id="s2-3">2.3 전체 구조</h3>
+<pre>
+┌────────────────────────────────────────────────────────────────┐
+│                        ModolRAG                               │
+│                                                                │
+│  ┌──────────┐  ┌────────────┐  ┌──────────┐  ┌─────────────┐ │
+│  │ 문서 읽기 │  │  핵심 엔진  │  │ REST API │  │  대시보드    │ │
+│  │ (Parsers)│  │  (Core)    │  │ (FastAPI)│  │ (React 웹앱)│ │
+│  │          │  │            │  │          │  │             │ │
+│  │ PDF      │  │ 쪼개기     │  │ /ingest  │  │ 문서 관리    │ │
+│  │ Word     │  │ 숫자변환   │  │ /search  │  │ 검색 테스트  │ │
+│  │ Excel    │  │ 의미저장소 │  │ /graph   │  │ 관계도 보기  │ │
+│  │ PPT      │  │ 키워드검색 │  │ /generate│  │ 설정         │ │
+│  │ Markdown │  │ 관계망     │  │ /apps    │  │ 앱 빌더      │ │
+│  │ Text     │  │ 처리흐름   │  │ /admin   │  │             │ │
+│  │          │  │ 가상답변   │  │          │  │             │ │
+│  │          │  │ AI 연결    │  │          │  │             │ │
+│  │          │  │ 관계추출   │  │          │  │             │ │
+│  └──────────┘  └────────────┘  └──────────┘  └─────────────┘ │
+│                                                                │
+│  ┌────────────────────────────────────────────────────────────┐│
+│  │                     PostgreSQL                            ││
+│  │  pgvector (의미검색)  │  tsvector (키워드검색)  │  SQL (관계) ││
+│  └────────────────────────────────────────────────────────────┘│
+└────────────────────────────────────────────────────────────────┘
+</pre>
+
+<h3 id="s2-4">2.4 처리 흐름</h3>
+
+<h4>문서 넣기 (Ingest)</h4>
+<div class="analogy">도서관에 새 책이 들어오면: 읽기 → 요약 카드 만들기 → 분류 번호 붙이기 → 서가에 꽂기 → 관련 책 연결</div>
+<pre>
+파일 업로드
+  → 읽기 (PDF/Word/... → 텍스트 추출)
+    → 쪼개기 (512자 단위, 문단/의미/페이지 기준)
+      → 숫자로 바꾸기 (Ollama 또는 OpenAI, 32개씩 묶어서 처리)
+        → 저장 (PostgreSQL에 벡터 + 키워드 인덱스 자동 생성)
+          → 관계 추출 (AI가 사람/개념/관계를 뽑아냄)
+            → 관계도 저장 (노드/연결선 저장)
+</pre>
+
+<h4>검색하기 (Search)</h4>
+<div class="analogy">3명의 사서에게 동시에 질문하고, 세 명의 답을 합쳐서 최종 답을 만드는 것</div>
+<pre>
+질문 입력
+  → 질문을 숫자로 변환
+  → (선택) 가상 답변 기법으로 질문 보강
+  → 사서 1: 의미 검색 (느낌이 비슷한 것 찾기)
+  → 사서 2: 키워드 검색 (정확한 단어 찾기)
+  → 사서 3: 관계망 검색 (연결 따라가기)
+  → 세 결과의 순위 합산 (RRF)
+  → 최종 상위 결과 반환
+</pre>
+
+<h4>답변 만들기 (Generate)</h4>
+<pre>
+검색 결과 (상위 조각들)
+  → "다음 자료를 참고해서 답해주세요" + 자료 + 질문 → AI에게 전달
+  → 글자가 하나씩 실시간으로 나옴 (ChatGPT처럼)
+</pre>
+
+<h3 id="s2-5">2.5 어떤 이론이 적용됐나</h3>
+
+<table>
+  <tr><th>이론/기법</th><th>쉽게 말하면</th><th>코드 위치</th></tr>
+  <tr><td>문단 기준 쪼개기</td><td>문단→문장→단어 순서로 나눔</td><td><code>core/chunker.py</code></td></tr>
+  <tr><td>의미 기준 쪼개기</td><td>"느낌이 달라지는 지점"에서 자름</td><td><code>core/chunker.py</code></td></tr>
+  <tr><td>의미 숫자변환</td><td>Ollama(무료 로컬) + OpenAI(유료 API) 둘 다 지원</td><td><code>core/embedder.py</code></td></tr>
+  <tr><td>키워드 검색</td><td>PostgreSQL 내장 전문 검색</td><td><code>core/fts.py</code></td></tr>
+  <tr><td>빠른 검색 목록</td><td>수백만 개에서도 빠르게 찾는 구조 (HNSW)</td><td><code>db/schema.sql</code></td></tr>
+  <tr><td>절반 크기 저장</td><td>숫자를 절반 크기로 압축 저장 → 메모리 50% 절약</td><td><code>db/schema.sql</code></td></tr>
+  <tr><td>3종 합체 검색</td><td>의미 + 키워드 + 관계망 동시 검색</td><td><code>core/hybrid_search.py</code></td></tr>
+  <tr><td>순위 합산 (RRF)</td><td>3개 검색 결과를 공정하게 합침 (가중치 지원)</td><td><code>core/hybrid_search.py</code></td></tr>
+  <tr><td>가상 답변 기법</td><td>가짜 답을 먼저 만들어서 진짜 답 찾기</td><td><code>core/hyde.py</code></td></tr>
+  <tr><td>관계망 (Knowledge Graph)</td><td>"친구의 친구" 2단계 탐색</td><td><code>core/graph_store.py</code></td></tr>
+  <tr><td>AI 관계 추출</td><td>AI가 문서에서 사람/개념/관계를 자동으로 뽑아냄</td><td><code>core/extractor.py</code></td></tr>
+  <tr><td>위키링크 인식</td><td>[[이런 형태]]의 링크를 자동으로 관계로 변환</td><td><code>core/extractor.py</code></td></tr>
+  <tr><td>실시간 답변</td><td>ChatGPT처럼 글자가 하나씩 나옴</td><td><code>api/generate.py</code></td></tr>
+  <tr><td>컬렉션 분류</td><td>검색 범위를 특정 문서 그룹으로 제한</td><td><code>api/</code> 전체</td></tr>
+  <tr><td>앱 빌더</td><td>앱별로 다른 AI 설정 + 검색 설정 → 맞춤 챗봇 만들기</td><td><code>api/apps.py</code></td></tr>
+</table>
+
+<h3 id="s2-6">2.6 갈아끼울 수 있는 설계 (플러그형)</h3>
+
+<div class="card">
+  <h4>부품 교체가 쉬운 구조</h4>
+  <div class="analogy">USB처럼 "규격만 맞으면 어떤 제품이든 꽂으면 됩니다". 삼성 USB든 샌디스크 USB든 USB 포트에 꽂으면 동작하듯이, Ollama든 OpenAI든 "숫자변환기 규격"에 맞으면 바로 교체 가능.</div>
+  <table>
+    <tr><th>부품</th><th>규격 (추상 클래스)</th><th>현재 지원 제품</th><th>새 제품 추가법</th></tr>
+    <tr><td>숫자 변환기</td><td><code>EmbedderBase</code></td><td>Ollama, OpenAI</td><td>클래스 1개 + 분기 1줄</td></tr>
+    <tr><td>AI 모델</td><td><code>LLMBase</code></td><td>Ollama, OpenAI</td><td>클래스 1개 + 분기 1줄</td></tr>
+    <tr><td>쪼개기 방식</td><td><code>ChunkerBase</code></td><td>문단식, 페이지식, 의미식</td><td>클래스 1개 + 분기 1줄</td></tr>
+    <tr><td>문서 읽기</td><td><code>ParserBase</code></td><td>PDF, Word, Excel, PPT, MD, TXT</td><td>클래스 1개 + 등록 1줄</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h4>2가지 사용법</h4>
+  <div class="grid">
+    <div>
+      <strong>방법 1: 독립 서버</strong>
+      <pre>
+pip install modolrag
+modolrag serve --db postgresql://...
+
+# 웹 API로 사용
+curl POST /api/ingest ...
+curl POST /api/search ...
+      </pre>
+      <p>→ 어떤 프로그래밍 언어에서든 HTTP로 호출</p>
+    </div>
+    <div>
+      <strong>방법 2: 라이브러리로 붙이기</strong>
+      <pre>
+from modolrag.core.pipeline import ingest_document
+from modolrag.core.hybrid_search import hybrid_search
+
+# 내 앱 코드 안에서 직접 호출
+results = await hybrid_search(pool, query, ...)
+      </pre>
+      <p>→ Python 앱에 직접 임포트해서 사용</p>
+    </div>
+  </div>
+</div>
+
+<h3 id="s2-7">2.7 다른 오픈소스와 비교</h3>
+
+<table>
+  <tr><th>프레임워크</th><th>장점</th><th>필요한 서비스</th><th>관계망</th><th>pip 설치</th><th>외부 의존</th></tr>
+  <tr>
+    <td><strong>ModolRAG</strong></td>
+    <td>PostgreSQL 통합, 관리 최소</td>
+    <td>PostgreSQL만</td>
+    <td><span class="badge badge-green">O</span></td>
+    <td><span class="badge badge-green">O</span></td>
+    <td><span class="badge badge-green">없음</span></td>
+  </tr>
+  <tr>
+    <td>RAGFlow</td>
+    <td>복잡한 문서 잘 읽음, 시각적 편집기</td>
+    <td>ES + Redis + MySQL</td>
+    <td><span class="badge badge-green">O</span></td>
+    <td>X (Docker만)</td>
+    <td>자체</td>
+  </tr>
+  <tr>
+    <td>Cognita</td>
+    <td>프로덕션 모듈화</td>
+    <td>Qdrant/Chroma 등</td>
+    <td>제한적</td>
+    <td>O</td>
+    <td>LangChain 등</td>
+  </tr>
+  <tr>
+    <td>Haystack</td>
+    <td>기업용 파이프라인</td>
+    <td>다양</td>
+    <td>제한적</td>
+    <td>O</td>
+    <td>자체</td>
+  </tr>
+  <tr>
+    <td>R2R</td>
+    <td>REST API, 이미지/음성도 지원</td>
+    <td>PostgreSQL + 기타</td>
+    <td><span class="badge badge-green">O</span></td>
+    <td>O</td>
+    <td>자체</td>
+  </tr>
+  <tr>
+    <td>kotaemon</td>
+    <td>검색+AI 추론, 사용자 UI</td>
+    <td>다양</td>
+    <td><span class="badge badge-green">O</span></td>
+    <td>O</td>
+    <td>자체</td>
+  </tr>
+</table>
+
+<div class="success">
+  <strong>ModolRAG의 한마디:</strong> "가장 가벼운 프로덕션 RAG 엔진". DB 1개, 프레임워크 의존 0개, pip 한 줄 설치, Supabase 호환.
+</div>
+
+<!-- ============================================================ -->
+<!-- PART 3 -->
+<!-- ============================================================ -->
+
+<h2 id="part3">Part 3. 코드에서 발견된 문제와 수정 내역</h2>
+
+<table>
+  <tr><th>심각도</th><th>문제</th><th>쉽게 말하면</th><th>수정 여부</th></tr>
+  <tr>
+    <td><span class="badge badge-red">치명적</span></td>
+    <td>관계망 노드에 좌표(임베딩) 누락</td>
+    <td>관계도의 각 인물에 "위치 정보"가 없어서 <strong>관계망 검색이 아예 안 됨</strong></td>
+    <td><span class="badge badge-green">수정 완료</span></td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-red">치명적</span></td>
+    <td>JSON 변환 버그</td>
+    <td>데이터를 저장할 때 <strong>형식이 깨져서</strong> DB에서 읽을 때 에러 발생 가능</td>
+    <td><span class="badge badge-green">수정 완료</span></td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-orange">중요</span></td>
+    <td>순위 합산에 가중치 미적용</td>
+    <td>의미검색/키워드검색/관계검색의 <strong>비중을 조절할 수 없었음</strong></td>
+    <td><span class="badge badge-green">수정 완료</span></td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-orange">중요</span></td>
+    <td>관계 거리에 따른 감쇠 미적용</td>
+    <td>"친구"와 "친구의 친구"가 <strong>같은 중요도로 취급</strong>됨</td>
+    <td><span class="badge badge-green">수정 완료</span></td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-blue">개선</span></td>
+    <td>숫자변환 비효율</td>
+    <td>Ollama 호출할 때 <strong>매번 새 연결을 만듦</strong> → 느림</td>
+    <td>향후</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-blue">개선</span></td>
+    <td>로그 없음</td>
+    <td>에러가 나도 <strong>어디서 났는지 기록이 안 됨</strong></td>
+    <td>향후</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-blue">개선</span></td>
+    <td>설정 캐싱 없음</td>
+    <td>설정 파일을 <strong>매번 다시 읽음</strong> (한 번만 읽으면 됨)</td>
+    <td>향후</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-blue">개선</span></td>
+    <td>임시 파일 미삭제</td>
+    <td>문서 업로드 후 <strong>임시 파일이 쌓임</strong></td>
+    <td>향후</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-blue">개선</span></td>
+    <td>키워드 검색 영어만</td>
+    <td>키워드 검색이 <strong>영어 기준으로 고정</strong>되어 한국어 검색이 약함</td>
+    <td>향후</td>
+  </tr>
+</table>
+
+<div class="card" style="margin-top:32px; text-align:center;">
+  <p style="color:#8b949e;">
+    ModolRAG v0.1.0 | <a href="https://github.com/modolai/ModolRAG">GitHub</a> | MIT License
+  </p>
+  <p style="color:#484f58; font-size:0.85em; margin-top:8px;">
+    참고: RRF (SIGIR 2009), HyDE (2022), RAPTOR (ICLR 2024), CRAG (ICLR 2025), Self-RAG (2023), Modular RAG (2024), Agentic RAG (2025)
+  </p>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,419 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1774877681185,
+  "projectRoot": "/Users/jiwonkim/Desktop/kimjiwon/ModolRAG",
+  "techStack": {
+    "languages": [
+      {
+        "name": "Python",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "pyproject.toml"
+        ]
+      },
+      {
+        "name": "C/C++",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "Makefile"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "fastapi",
+        "version": null,
+        "category": "backend"
+      },
+      {
+        "name": "pytest",
+        "version": null,
+        "category": "testing"
+      }
+    ],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "make build",
+    "testCommand": "make test",
+    "lintCommand": "ruff check",
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs",
+      "tests"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "dashboard": {
+      "path": "dashboard",
+      "purpose": null,
+      "fileCount": 10,
+      "lastAccessed": 1774877681178,
+      "keyFiles": [
+        "README.md",
+        "eslint.config.js",
+        "index.html",
+        "package-lock.json",
+        "package.json"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 15,
+      "lastAccessed": 1774877681179,
+      "keyFiles": [
+        "ARCHITECTURE.md",
+        "DESIGN_ANALYSIS.md",
+        "FRONTEND_ARCHITECTURE_DECISION.md",
+        "MODOLAI_INTEGRATION.md",
+        "ModolRAG_누구나_사용가이드.html"
+      ]
+    },
+    "modolrag": {
+      "path": "modolrag",
+      "purpose": null,
+      "fileCount": 4,
+      "lastAccessed": 1774877681179,
+      "keyFiles": [
+        "__init__.py",
+        "cli.py",
+        "config.py",
+        "main.py"
+      ]
+    },
+    "modolrag.egg-info": {
+      "path": "modolrag.egg-info",
+      "purpose": null,
+      "fileCount": 6,
+      "lastAccessed": 1774877681179,
+      "keyFiles": [
+        "PKG-INFO",
+        "SOURCES.txt",
+        "dependency_links.txt",
+        "entry_points.txt",
+        "requires.txt"
+      ]
+    },
+    "tests": {
+      "path": "tests",
+      "purpose": "Test files",
+      "fileCount": 7,
+      "lastAccessed": 1774877681179,
+      "keyFiles": [
+        "__init__.py",
+        "run_all.sh",
+        "test_api.py",
+        "test_chunker.py",
+        "test_extractor.py"
+      ]
+    },
+    "dashboard/node_modules": {
+      "path": "dashboard/node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 1,
+      "lastAccessed": 1774877681181,
+      "keyFiles": []
+    },
+    "dashboard/public": {
+      "path": "dashboard/public",
+      "purpose": "Public files",
+      "fileCount": 2,
+      "lastAccessed": 1774877681182,
+      "keyFiles": [
+        "favicon.svg",
+        "icons.svg"
+      ]
+    },
+    "dashboard/src": {
+      "path": "dashboard/src",
+      "purpose": "Source code",
+      "fileCount": 6,
+      "lastAccessed": 1774877681182,
+      "keyFiles": [
+        "App.tsx",
+        "api.ts",
+        "i18n.tsx"
+      ]
+    },
+    "modolrag/api": {
+      "path": "modolrag/api",
+      "purpose": "API routes",
+      "fileCount": 10,
+      "lastAccessed": 1774877681183,
+      "keyFiles": [
+        "__init__.py",
+        "admin.py",
+        "apps.py"
+      ]
+    },
+    "modolrag/static": {
+      "path": "modolrag/static",
+      "purpose": "Static files",
+      "fileCount": 3,
+      "lastAccessed": 1774877681184,
+      "keyFiles": [
+        "favicon.svg",
+        "icons.svg",
+        "index.html"
+      ]
+    },
+    "tests/fixtures": {
+      "path": "tests/fixtures",
+      "purpose": "Test fixtures",
+      "fileCount": 1,
+      "lastAccessed": 1774877681185,
+      "keyFiles": []
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "README.md",
+      "accessCount": 14,
+      "lastAccessed": 1774878466675,
+      "type": "file"
+    },
+    {
+      "path": "pyproject.toml",
+      "accessCount": 4,
+      "lastAccessed": 1774878344839,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 3,
+      "lastAccessed": 1774878360016,
+      "type": "directory"
+    },
+    {
+      "path": "Dockerfile",
+      "accessCount": 2,
+      "lastAccessed": 1774878262629,
+      "type": "file"
+    },
+    {
+      "path": "docker-compose.yml",
+      "accessCount": 2,
+      "lastAccessed": 1774878264715,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/core/chunker.py",
+      "accessCount": 2,
+      "lastAccessed": 1774878279909,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/core/embedder.py",
+      "accessCount": 2,
+      "lastAccessed": 1774878280329,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/core/extractor.py",
+      "accessCount": 2,
+      "lastAccessed": 1774878280582,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/main.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878262039,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/config.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878262445,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/cli.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878262581,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/db/connection.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878264912,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/db/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878265013,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/db/schema.sql",
+      "accessCount": 1,
+      "lastAccessed": 1774878268696,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/api/ingest.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878268905,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/api/search.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878269377,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/api/admin.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878269598,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/api/generate.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878269795,
+      "type": "file"
+    },
+    {
+      "path": ".dockerignore",
+      "accessCount": 1,
+      "lastAccessed": 1774878270014,
+      "type": "file"
+    },
+    {
+      "path": "setup.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878272669,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/api/graph.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878272995,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_chunker.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878273247,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_extractor.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878273493,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/api/collections.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878273563,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/api/apps.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878273713,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_api.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878273747,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878273990,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/core/pipeline.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878279699,
+      "type": "file"
+    },
+    {
+      "path": "modolrag",
+      "accessCount": 1,
+      "lastAccessed": 1774878280491,
+      "type": "directory"
+    },
+    {
+      "path": "modolrag/core/llm.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878280650,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/core/hybrid_search.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878283674,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/core/vector_store.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878283887,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/parsers/base.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878284034,
+      "type": "file"
+    },
+    {
+      "path": "modolrag/core",
+      "accessCount": 1,
+      "lastAccessed": 1774878287584,
+      "type": "directory"
+    },
+    {
+      "path": "dashboard/package.json",
+      "accessCount": 1,
+      "lastAccessed": 1774878291707,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_parsers.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878293555,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_hybrid_search.py",
+      "accessCount": 1,
+      "lastAccessed": 1774878294294,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 1,
+      "lastAccessed": 1774878416285,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}
