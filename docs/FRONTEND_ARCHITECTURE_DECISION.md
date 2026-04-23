@@ -1,4 +1,4 @@
-# ModolRAG Frontend Architecture Decision
+# hanimo-rag Frontend Architecture Decision
 
 > **Status**: Analysis complete, ready for implementation
 > **Date**: 2026-03-17
@@ -18,13 +18,13 @@
 
 ---
 
-## 1. 현재 ModolRAG 아키텍처
+## 1. 현재 hanimo-rag 아키텍처
 
 ```
 BUILD: npm run build (tsc -b && vite build)
-dashboard/ → modolrag/static/ (HTML+JS+CSS)
+dashboard/ → hanimo-rag/static/ (HTML+JS+CSS)
 
-RUNTIME: uvicorn modolrag.main:app
+RUNTIME: uvicorn hanimo_rag.main:app
 FastAPI serves:
   /api/*        → API endpoints
   /dashboard/*  → StaticFiles(html=True) → SPA
@@ -54,11 +54,11 @@ Stage 2: Python → COPY static/ + run uvicorn
 | **Flowise** | 50K | React | SPA | Node.js | 단일 컨테이너 |
 | **Langflow** | 28K | React + TS | SPA | Python/FastAPI | 단일 컨테이너 |
 
-핵심: 6개 중 5개가 React SPA + 단일 컨테이너. Langflow가 ModolRAG와 가장 유사 (React SPA + FastAPI).
+핵심: 6개 중 5개가 React SPA + 단일 컨테이너. Langflow가 hanimo-rag와 가장 유사 (React SPA + FastAPI).
 
 ---
 
-## 3. React SPA vs Next.js (ModolRAG 기준)
+## 3. React SPA vs Next.js (hanimo-rag 기준)
 
 | 관점 | React SPA (Vite) | Next.js |
 |------|-------------------|---------|

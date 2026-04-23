@@ -2,7 +2,7 @@
 set -e
 
 echo "=================================="
-echo "  ModolRAG — Starting All Services"
+echo "  hanimo-rag — Starting All Services"
 echo "=================================="
 echo ""
 
@@ -44,7 +44,7 @@ else
         fi
     else
         echo "  ❌ Ollama not installed. Install: brew install ollama"
-        echo "     Or use OpenAI: set MODOLRAG_EMBEDDING_PROVIDER=openai in .env"
+        echo "     Or use OpenAI: set HANIMO_RAG_EMBEDDING_PROVIDER=openai in .env"
         exit 1
     fi
 fi
@@ -60,7 +60,7 @@ else
     echo "  ✅ Model downloaded"
 fi
 
-# 3. Start Docker services (PostgreSQL + ModolRAG)
+# 3. Start Docker services (PostgreSQL + hanimo-rag)
 echo ""
 echo "[3/4] Starting Docker services..."
 cd "$(dirname "$0")"
@@ -68,15 +68,15 @@ docker compose up -d --build
 
 # 4. Wait for health check
 echo ""
-echo "[4/4] Waiting for ModolRAG to be ready..."
+echo "[4/4] Waiting for hanimo-rag to be ready..."
 for i in $(seq 1 60); do
     if curl -sf http://localhost:8009/health > /dev/null 2>&1; then
-        echo "  ✅ ModolRAG is ready!"
+        echo "  ✅ hanimo-rag is ready!"
         break
     fi
     if [ "$i" -eq 60 ]; then
         echo "  ❌ Timeout. Checking logs..."
-        docker compose logs --tail=20 modolrag
+        docker compose logs --tail=20 hanimo-rag
         exit 1
     fi
     printf "."
@@ -96,5 +96,5 @@ echo "  🐘 PostgreSQL:   localhost:5439"
 echo "  🦙 Ollama:       localhost:11434"
 echo ""
 echo "  Stop:   cd $(pwd) && docker compose down"
-echo "  Logs:   cd $(pwd) && docker compose logs -f modolrag"
+echo "  Logs:   cd $(pwd) && docker compose logs -f hanimo-rag"
 echo ""

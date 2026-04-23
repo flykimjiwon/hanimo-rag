@@ -1,6 +1,6 @@
 """Test RRF fusion and hybrid search logic."""
 import pytest
-from modolrag.core.hybrid_search import rrf_fuse, SearchResult, hybrid_search
+from hanimo_rag.core.hybrid_search import rrf_fuse, SearchResult, hybrid_search
 
 
 class TestRRFFusion:

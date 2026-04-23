@@ -1,12 +1,12 @@
 """Test FastAPI endpoints (no DB required — tests app structure only)."""
 import pytest
-from modolrag.main import app
+from hanimo_rag.main import app
 
 
 class TestAppStructure:
     def test_app_exists(self):
         assert app is not None
-        assert app.title == "ModolRAG"
+        assert app.title == "hanimo_rag"
 
     def test_routes_registered(self):
         paths = [r.path for r in app.routes if hasattr(r, 'path')]
@@ -32,7 +32,7 @@ class TestAppStructure:
 
     def test_openapi_schema_generates(self):
         schema = app.openapi()
-        assert schema["info"]["title"] == "ModolRAG"
+        assert schema["info"]["title"] == "hanimo_rag"
         assert schema["info"]["version"] == "0.1.0"
         assert len(schema["paths"]) >= 8
 
@@ -87,7 +87,7 @@ class TestOpenAPISchema:
 
     def test_info_fields(self):
         schema = app.openapi()
-        assert schema["info"]["title"] == "ModolRAG"
+        assert schema["info"]["title"] == "hanimo_rag"
         assert "description" in schema["info"]
         assert "license" in schema["info"]
 
@@ -105,91 +105,91 @@ class TestMiddleware:
         assert "CORSMiddleware" in middleware_classes
 
     def test_setup_middleware_callable(self):
-        from modolrag.api.middleware import setup_middleware
+        from hanimo_rag.api.middleware import setup_middleware
         assert callable(setup_middleware)
 
 
 class TestModuleImports:
     def test_parsers(self):
-        from modolrag.parsers import get_parser
+        from hanimo_rag.parsers import get_parser
         assert callable(get_parser)
 
     def test_chunker(self):
-        from modolrag.core.chunker import get_chunker
+        from hanimo_rag.core.chunker import get_chunker
         assert callable(get_chunker)
 
     def test_embedder(self):
-        from modolrag.core.embedder import get_embedder, OllamaEmbedder, OpenAIEmbedder
+        from hanimo_rag.core.embedder import get_embedder, OllamaEmbedder, OpenAIEmbedder
         assert callable(get_embedder)
 
     def test_vector_store(self):
-        from modolrag.core.vector_store import search_similar, upsert_chunks
+        from hanimo_rag.core.vector_store import search_similar, upsert_chunks
         assert callable(search_similar)
 
     def test_fts(self):
-        from modolrag.core.fts import search_fts
+        from hanimo_rag.core.fts import search_fts
         assert callable(search_fts)
 
     def test_graph_store(self):
-        from modolrag.core.graph_store import traverse_graph, upsert_node
+        from hanimo_rag.core.graph_store import traverse_graph, upsert_node
         assert callable(traverse_graph)
 
     def test_hybrid_search(self):
-        from modolrag.core.hybrid_search import hybrid_search, rrf_fuse
+        from hanimo_rag.core.hybrid_search import hybrid_search, rrf_fuse
         assert callable(hybrid_search)
 
     def test_extractor(self):
-        from modolrag.core.extractor import extract_entities_and_relations, extract_wikilinks
+        from hanimo_rag.core.extractor import extract_entities_and_relations, extract_wikilinks
         assert callable(extract_entities_and_relations)
 
     def test_pipeline(self):
-        from modolrag.core.pipeline import ingest_document
+        from hanimo_rag.core.pipeline import ingest_document
         assert callable(ingest_document)
 
     def test_config(self):
-        from modolrag.config import get_settings
+        from hanimo_rag.config import get_settings
         s = get_settings()
         assert s.EMBEDDING_PROVIDER in ("ollama", "openai")
 
 
 class TestConfigDefaults:
     def test_default_chunk_size(self):
-        from modolrag.config import Settings
+        from hanimo_rag.config import Settings
         s = Settings()
         assert s.CHUNK_SIZE == 512
         assert s.CHUNK_OVERLAP == 51
 
     def test_default_search_params(self):
-        from modolrag.config import Settings
+        from hanimo_rag.config import Settings
         s = Settings()
         assert s.SIMILARITY_TOP_K == 5
         assert s.SIMILARITY_THRESHOLD == 0.7
 
     def test_default_llm_params(self):
-        from modolrag.config import Settings
+        from hanimo_rag.config import Settings
         s = Settings()
         assert s.LLM_TEMPERATURE == 0.1
         assert s.LLM_MAX_TOKENS == 2048
         assert s.ENABLE_HYDE is False
 
     def test_parsed_api_keys_empty(self):
-        from modolrag.config import Settings
+        from hanimo_rag.config import Settings
         s = Settings()
         assert s.parsed_api_keys == []
 
     def test_parsed_api_keys_with_values(self):
-        from modolrag.config import Settings
+        from hanimo_rag.config import Settings
         s = Settings(API_KEYS="key1, key2 , key3")
         assert s.parsed_api_keys == ["key1", "key2", "key3"]
 
     def test_embedding_dimensions_type(self):
-        from modolrag.config import Settings
+        from hanimo_rag.config import Settings
         s = Settings()
         assert isinstance(s.EMBEDDING_DIMENSIONS, int)
         assert s.EMBEDDING_DIMENSIONS == 768
 
     def test_clear_settings_cache(self):
-        from modolrag.config import get_settings, clear_settings
+        from hanimo_rag.config import get_settings, clear_settings
         s1 = get_settings()
         s2 = get_settings()
         assert s1 is s2  # cached
@@ -199,35 +199,35 @@ class TestConfigDefaults:
         assert s3.EMBEDDING_PROVIDER in ("ollama", "openai")
 
     def test_env_prefix(self):
-        from modolrag.config import Settings
-        assert Settings.model_config["env_prefix"] == "MODOLRAG_"
+        from hanimo_rag.config import Settings
+        assert Settings.model_config["env_prefix"] == "HANIMO_RAG_"
 
     def test_embedding_provider_values(self):
-        from modolrag.config import Settings
+        from hanimo_rag.config import Settings
         s = Settings()
         assert s.EMBEDDING_PROVIDER in ("ollama", "openai", "local")
 
 
 class TestCLIImport:
     def test_cli_main_callable(self):
-        from modolrag.cli import main
+        from hanimo_rag.cli import main
         assert callable(main)
 
     def test_cli_argparse_commands(self):
         """CLI should define expected subcommands."""
         import argparse
-        from modolrag.cli import main
+        from hanimo_rag.cli import main
         # main() uses argparse — just verify it doesn't crash on import
         assert main is not None
 
     def test_hyde_config(self):
-        from modolrag.config import Settings
+        from hanimo_rag.config import Settings
         s = Settings()
         assert isinstance(s.ENABLE_HYDE, bool)
         assert s.ENABLE_HYDE is False  # default
 
     def test_llm_provider_config(self):
-        from modolrag.config import Settings
+        from hanimo_rag.config import Settings
         s = Settings()
         assert s.LLM_PROVIDER in ("ollama", "openai")
         assert isinstance(s.LLM_MODEL, str)

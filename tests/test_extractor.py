@@ -1,6 +1,6 @@
 """Test entity/relationship extractor."""
 import pytest
-from modolrag.core.extractor import extract_wikilinks, ExtractionResult, Entity, Relationship, extract_entities_and_relations
+from hanimo_rag.core.extractor import extract_wikilinks, ExtractionResult, Entity, Relationship, extract_entities_and_relations
 
 
 class TestWikilinks:
@@ -16,7 +16,7 @@ class TestWikilinks:
         assert len(rels) == 0
 
     def test_single_link(self):
-        rels = extract_wikilinks("Check [[ModolRAG]] out.")
+        rels = extract_wikilinks("Check [[hanimo_rag]] out.")
         assert len(rels) == 0  # needs 2+ for relationships
 
 
@@ -76,38 +76,38 @@ class TestWikilinksEdgeCases:
 
 class TestParseLlmJson:
     def test_direct_json(self):
-        from modolrag.core.extractor import _parse_llm_json
+        from hanimo_rag.core.extractor import _parse_llm_json
         result = _parse_llm_json('{"entities": [], "relationships": []}')
         assert result == {"entities": [], "relationships": []}
 
     def test_markdown_code_block(self):
-        from modolrag.core.extractor import _parse_llm_json
+        from hanimo_rag.core.extractor import _parse_llm_json
         text = '```json\n{"entities": [{"name": "X"}]}\n```'
         result = _parse_llm_json(text)
         assert result["entities"][0]["name"] == "X"
 
     def test_garbage_returns_none(self):
-        from modolrag.core.extractor import _parse_llm_json
+        from hanimo_rag.core.extractor import _parse_llm_json
         assert _parse_llm_json("not json at all") is None
 
     def test_empty_string_returns_none(self):
-        from modolrag.core.extractor import _parse_llm_json
+        from hanimo_rag.core.extractor import _parse_llm_json
         assert _parse_llm_json("") is None
         assert _parse_llm_json("   ") is None
 
     def test_json_array_returns_none(self):
         """Only dicts are valid, not arrays."""
-        from modolrag.core.extractor import _parse_llm_json
+        from hanimo_rag.core.extractor import _parse_llm_json
         assert _parse_llm_json('[1, 2, 3]') is None
 
     def test_json_with_surrounding_text(self):
-        from modolrag.core.extractor import _parse_llm_json
+        from hanimo_rag.core.extractor import _parse_llm_json
         text = 'Here is the result: {"entities": []} and some more text'
         result = _parse_llm_json(text)
         assert result == {"entities": []}
 
     def test_nested_json_objects(self):
-        from modolrag.core.extractor import _parse_llm_json
+        from hanimo_rag.core.extractor import _parse_llm_json
         text = '{"entities": [{"name": "X", "type": "concept"}], "relationships": []}'
         result = _parse_llm_json(text)
         assert len(result["entities"]) == 1

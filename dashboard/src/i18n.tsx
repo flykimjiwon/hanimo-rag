@@ -79,8 +79,8 @@ interface Ctx { locale: Locale; setLocale: (l: Locale) => void; t: (k: TKey) => 
 const I18nCtx = createContext<Ctx>({ locale: 'ko', setLocale: () => {}, t: (k) => k })
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>(() => (localStorage.getItem('modolrag-locale') as Locale) || 'ko')
-  const change = (l: Locale) => { setLocale(l); localStorage.setItem('modolrag-locale', l) }
+  const [locale, setLocale] = useState<Locale>(() => (localStorage.getItem('hanimo-rag-locale') as Locale) || 'ko')
+  const change = (l: Locale) => { setLocale(l); localStorage.setItem('hanimo-rag-locale', l) }
   const t = (k: TKey) => T[k]?.[locale] || k
   return <I18nCtx.Provider value={{ locale, setLocale: change, t }}>{children}</I18nCtx.Provider>
 }

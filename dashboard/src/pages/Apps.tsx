@@ -45,7 +45,7 @@ export default function Apps() {
     setChatMsgs(prev => [...prev, { role: 'user', content: msg }]); setChatLoading(true)
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      const key = localStorage.getItem('modolrag-api-key')
+      const key = localStorage.getItem('hanimo-rag-api-key')
       if (key) headers['X-API-Key'] = key
       const res = await fetch(`/api/apps/${sel}/chat`, { method: 'POST', headers, body: JSON.stringify({ message: msg }) })
       if (!res.ok) throw new Error(`${res.status}`)

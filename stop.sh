@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "=================================="
-echo "  ModolRAG — Stopping All Services"
+echo "  hanimo-rag — Stopping All Services"
 echo "=================================="
 echo ""
 
@@ -9,7 +9,7 @@ cd "$(dirname "$0")"
 
 echo "[1/2] Stopping Docker services..."
 if docker compose down 2>/dev/null; then
-    echo "  ✅ PostgreSQL + ModolRAG stopped"
+    echo "  ✅ PostgreSQL + hanimo-rag stopped"
 else
     echo "  ⚠️  Docker services not running"
 fi

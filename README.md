@@ -1,4 +1,4 @@
-# ModolRAG
+# hanimo-rag
 
 **PostgreSQL-native Hybrid RAG Engine**
 
@@ -7,24 +7,24 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)](https://fastapi.tiangolo.com)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791.svg)](https://www.postgresql.org)
 
-ModolRAG is a lightweight, pip-installable RAG (Retrieval-Augmented Generation) engine that runs entirely on PostgreSQL. Upload documents, group them into collections, connect an LLM, and get a production-ready search API — no Elasticsearch, no separate vector database, no graph database.
+hanimo-rag is a lightweight, pip-installable RAG (Retrieval-Augmented Generation) engine that runs entirely on PostgreSQL. Upload documents, group them into collections, connect an LLM, and get a production-ready search API — no Elasticsearch, no separate vector database, no graph database.
 
 ```bash
-pip install modolrag
-modolrag serve --db postgresql://localhost:5439/modolrag
+pip install hanimo-rag
+hanimo-rag serve --db postgresql://localhost:5439/hanimo-rag
 ```
 
 ---
 
 ## 🤖 AI Setup Guide — 이 지침을 복사해 AI한테 그대로 시키세요
 
-> 아래 내용을 **ChatGPT, Claude, Cursor, Copilot 등** AI에게 그대로 붙여넣으면 ModolRAG를 자동으로 설치·실행합니다.
+> 아래 내용을 **ChatGPT, Claude, Cursor, Copilot 등** AI에게 그대로 붙여넣으면 hanimo-rag를 자동으로 설치·실행합니다.
 
 <details>
 <summary><b>📋 전체 설치 지침 복사하기 (클릭해서 펼치세요)</b></summary>
 
 ```
-아래 지침대로 ModolRAG를 설치하고 실행해줘. 순서대로 하나씩 진행해.
+아래 지침대로 hanimo-rag를 설치하고 실행해줘. 순서대로 하나씩 진행해.
 
 ## 중요: 각 단계마다 이미 설치/실행 중인지 먼저 확인하고, 되어있으면 "✅ 이미 완료" 출력 후 다음으로 넘어가.
 
@@ -54,23 +54,23 @@ modolrag serve --db postgresql://localhost:5439/modolrag
 ## 2단계: 프로젝트 클론 및 설치
 
   # 이미 클론되어 있는지 확인
-  if [ -d "ModolRAG" ] && [ -f "ModolRAG/pyproject.toml" ]; then
-    echo "✅ ModolRAG 프로젝트 이미 존재"
-    cd ModolRAG
+  if [ -d "hanimo-rag" ] && [ -f "hanimo-rag/pyproject.toml" ]; then
+    echo "✅ hanimo-rag 프로젝트 이미 존재"
+    cd hanimo-rag
   else
     echo "📥 클론 중..."
-    git clone https://github.com/modolai/ModolRAG.git
-    cd ModolRAG
+    git clone https://github.com/hanimo-webui/hanimo-rag.git
+    cd hanimo-rag
   fi
 
   # 이미 설치되어 있는지 확인
-  python -c "import modolrag; print(f'✅ modolrag {modolrag.__version__} 이미 설치됨')" 2>/dev/null || {
+  python -c "import hanimo-rag; print(f'✅ hanimo-rag {hanimo-rag.__version__} 이미 설치됨')" 2>/dev/null || {
     echo "📦 설치 중..."
     pip install -e ".[dev]"
   }
 
   # CLI 확인
-  modolrag --help > /dev/null 2>&1 && echo "✅ CLI 동작 확인" || echo "⚠️ CLI 등록 안 됨. pip install -e . 다시 실행"
+  hanimo-rag --help > /dev/null 2>&1 && echo "✅ CLI 동작 확인" || echo "⚠️ CLI 등록 안 됨. pip install -e . 다시 실행"
 
 ## 3단계: Ollama 임베딩 모델 설치
 
@@ -91,7 +91,7 @@ modolrag serve --db postgresql://localhost:5439/modolrag
 
   # 이미 서버가 돌고 있는지 확인
   curl -sf http://localhost:8009/health > /dev/null 2>&1 && {
-    echo "✅ ModolRAG 이미 실행 중 (http://localhost:8009)"
+    echo "✅ hanimo-rag 이미 실행 중 (http://localhost:8009)"
     echo "   Dashboard: http://localhost:8009/dashboard"
     echo "   Swagger:   http://localhost:8009/docs"
   } || {
@@ -118,7 +118,7 @@ modolrag serve --db postgresql://localhost:5439/modolrag
     echo "✅ 문서 ${DOC_COUNT}개 이미 등록됨 (업로드 스킵)"
   else
     echo "📄 테스트 문서 업로드..."
-    echo "ModolRAG는 PostgreSQL 기반 RAG 엔진입니다." > /tmp/test.txt
+    echo "hanimo-rag는 PostgreSQL 기반 RAG 엔진입니다." > /tmp/test.txt
     curl -X POST http://localhost:8009/api/ingest -F "file=@/tmp/test.txt"
     echo ""
     echo "⏳ 임베딩 처리 대기 (10초)..."
@@ -157,28 +157,28 @@ print(f'✅ 검색 결과: {d[\"count\"]}개')
   # 데이터는 Docker 볼륨에 보존됨. 재시작: ./start.sh
 
 ## 포트 구성
-- ModolRAG API + Dashboard: 8009
+- hanimo-rag API + Dashboard: 8009
 - PostgreSQL: 5439
 - Ollama: 11434
 
 ## 환경변수 (.env 파일에 작성 가능)
-POSTGRES_PASSWORD=modolrag         # DB 비밀번호
+POSTGRES_PASSWORD=hanimo-rag         # DB 비밀번호
 PG_PORT=5439                       # PostgreSQL 포트
-MODOLRAG_PORT=8009                 # API 서버 포트
-MODOLRAG_API_KEYS=                 # API 키 (빈값=인증없음)
-MODOLRAG_EMBEDDING_PROVIDER=ollama # ollama 또는 openai
-MODOLRAG_EMBEDDING_MODEL=nomic-embed-text  # 임베딩 모델
-MODOLRAG_OLLAMA_BASE_URL=http://localhost:11434  # Ollama URL
-MODOLRAG_OPENAI_API_KEY=           # OpenAI 쓸 경우만
-MODOLRAG_CHUNK_SIZE=512            # 청크 크기 (128-4096)
-MODOLRAG_CHUNK_OVERLAP=51         # 청크 오버랩 (0-512)
-MODOLRAG_SIMILARITY_TOP_K=5       # 검색 결과 수 (1-50)
-MODOLRAG_SIMILARITY_THRESHOLD=0.7 # 유사도 임계값 (0.0-1.0)
+HANIMO_RAG_PORT=8009                 # API 서버 포트
+HANIMO_RAG_API_KEYS=                 # API 키 (빈값=인증없음)
+HANIMO_RAG_EMBEDDING_PROVIDER=ollama # ollama 또는 openai
+HANIMO_RAG_EMBEDDING_MODEL=nomic-embed-text  # 임베딩 모델
+HANIMO_RAG_OLLAMA_BASE_URL=http://localhost:11434  # Ollama URL
+HANIMO_RAG_OPENAI_API_KEY=           # OpenAI 쓸 경우만
+HANIMO_RAG_CHUNK_SIZE=512            # 청크 크기 (128-4096)
+HANIMO_RAG_CHUNK_OVERLAP=51         # 청크 오버랩 (0-512)
+HANIMO_RAG_SIMILARITY_TOP_K=5       # 검색 결과 수 (1-50)
+HANIMO_RAG_SIMILARITY_THRESHOLD=0.7 # 유사도 임계값 (0.0-1.0)
 
 ## OpenAI 사용 시 (Ollama 대신)
-MODOLRAG_EMBEDDING_PROVIDER=openai
-MODOLRAG_OPENAI_API_KEY=sk-your-key-here
-MODOLRAG_EMBEDDING_MODEL=text-embedding-3-small
+HANIMO_RAG_EMBEDDING_PROVIDER=openai
+HANIMO_RAG_OPENAI_API_KEY=sk-your-key-here
+HANIMO_RAG_EMBEDDING_MODEL=text-embedding-3-small
 # 주의: schema.sql의 halfvec(768)을 halfvec(1536)으로 변경 필요
 
 ## API 엔드포인트 (25개)
@@ -295,7 +295,7 @@ POST /api/apps/{id}/chat                    # 앱으로 채팅
 
 ## How It Works
 
-ModolRAG is designed so that **anyone — even non-developers — can create a production RAG API** through the web dashboard.
+hanimo-rag is designed so that **anyone — even non-developers — can create a production RAG API** through the web dashboard.
 
 ### The 4-Step Flow
 
@@ -309,8 +309,8 @@ Step 2: Create a Collection
   Select which documents belong to this collection
 
 Step 3: Connect an LLM
-  Your app calls ModolRAG's search API with the collection ID
-  ModolRAG returns relevant context from ONLY those documents
+  Your app calls hanimo-rag's search API with the collection ID
+  hanimo-rag returns relevant context from ONLY those documents
 
 Step 4: Use the API
   POST http://localhost:8009/api/search
@@ -330,7 +330,7 @@ Step 4: Use the API
    POST /api/search
    {"query": user_message, "collection_id": "support-bot-uuid", "top_k": 5}
 
-4. ModolRAG returns the 5 most relevant passages
+4. hanimo-rag returns the 5 most relevant passages
    → Feed these as context to ChatGPT/Claude/Llama
 
 5. LLM generates an answer grounded in YOUR documents
@@ -344,7 +344,7 @@ Collection "Product Docs"  → docs: api-guide.md, architecture.pdf
 Collection "Sales"         → docs: pricing.xlsx, pitch-deck.pptx
 
 Each collection = separate search scope = separate API endpoint
-Same ModolRAG instance serves all of them
+Same hanimo-rag instance serves all of them
 ```
 
 ---
@@ -352,8 +352,8 @@ Same ModolRAG instance serves all of them
 ## Quick Start (One Command)
 
 ```bash
-git clone https://github.com/modolai/ModolRAG.git
-cd ModolRAG
+git clone https://github.com/hanimo-webui/hanimo-rag.git
+cd hanimo-rag
 ./start.sh
 ```
 
@@ -364,7 +364,7 @@ cd ModolRAG
 | 0 | Starts Docker Desktop if not running |
 | 1 | Checks Ollama is running (starts if needed) |
 | 2 | Downloads embedding model `nomic-embed-text` if missing |
-| 3 | Builds and starts PostgreSQL + ModolRAG containers |
+| 3 | Builds and starts PostgreSQL + hanimo-rag containers |
 | 4 | Waits for health check, prints all URLs |
 
 ```
@@ -380,14 +380,14 @@ cd ModolRAG
   🦙 Ollama:       localhost:11434
 
   Stop:   docker compose down
-  Logs:   docker compose logs -f modolrag
+  Logs:   docker compose logs -f hanimo-rag
 ```
 
 ### Services & Ports
 
 | Service | Port | Description |
 |---|---|---|
-| **ModolRAG** | `8009` | FastAPI API + React Dashboard + Swagger |
+| **hanimo-rag** | `8009` | FastAPI API + React Dashboard + Swagger |
 | **PostgreSQL** | `5439` | pgvector:pg15 (data persisted in Docker volume) |
 | **Ollama** | `11434` | Local embedding model (runs on host machine) |
 
@@ -401,13 +401,13 @@ If you already have PostgreSQL with pgvector:
 
 ```bash
 # Install
-pip install modolrag
+pip install hanimo-rag
 
 # Initialize database
-modolrag init-db --db postgresql://user:pass@localhost:5439/modolrag
+hanimo-rag init-db --db postgresql://user:pass@localhost:5439/hanimo-rag
 
 # Start server
-modolrag serve --port 8009 --db postgresql://user:pass@localhost:5439/modolrag
+hanimo-rag serve --port 8009 --db postgresql://user:pass@localhost:5439/hanimo-rag
 
 # Open dashboard
 open http://localhost:8009/dashboard
@@ -416,9 +416,9 @@ open http://localhost:8009/dashboard
 ### CLI Commands
 
 ```bash
-modolrag serve [--host 0.0.0.0] [--port 8009] [--db URI] [--reload]
-modolrag init-db [--db URI]
-modolrag ingest <file> [--db URI]
+hanimo-rag serve [--host 0.0.0.0] [--port 8009] [--db URI] [--reload]
+hanimo-rag init-db [--db URI]
+hanimo-rag ingest <file> [--db URI]
 ```
 
 ---
@@ -427,7 +427,7 @@ modolrag ingest <file> [--db URI]
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         ModolRAG                                │
+│                         hanimo-rag                                │
 │                                                                 │
 │  Document  →  Parser  →  Chunker  →  Embedder  →  PostgreSQL   │
 │  (6 types)   (pypdf,    (recursive,  (Ollama/    ├─ pgvector    │
@@ -605,13 +605,13 @@ All endpoints (except `/health`) require the `X-API-Key` header:
 curl -H "X-API-Key: your-key" http://localhost:8009/api/documents
 ```
 
-If `MODOLRAG_API_KEYS` is empty (default), authentication is disabled — all requests are allowed.
+If `HANIMO_RAG_API_KEYS` is empty (default), authentication is disabled — all requests are allowed.
 
 ---
 
 ## API Documentation
 
-ModolRAG auto-generates interactive API documentation from code. No manual doc writing needed.
+hanimo-rag auto-generates interactive API documentation from code. No manual doc writing needed.
 
 ### How to Access
 
@@ -663,21 +663,21 @@ Access at **[localhost:8009/dashboard](http://localhost:8009/dashboard)**
 
 ## Configuration
 
-All settings via environment variables with `MODOLRAG_` prefix:
+All settings via environment variables with `HANIMO_RAG_` prefix:
 
 | Variable | Default | Description |
 |---|---|---|
-| `MODOLRAG_POSTGRES_URI` | `postgresql://localhost:5432/modolrag` | PostgreSQL connection string |
-| `MODOLRAG_API_KEYS` | `""` (no auth) | Comma-separated valid API keys |
-| `MODOLRAG_EMBEDDING_PROVIDER` | `ollama` | `ollama` (local) or `openai` (cloud) |
-| `MODOLRAG_EMBEDDING_MODEL` | `nomic-embed-text` | Model name for embeddings |
-| `MODOLRAG_EMBEDDING_DIMENSIONS` | `768` | Vector dimensions (768 for nomic, 1536 for OpenAI) |
-| `MODOLRAG_OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
-| `MODOLRAG_OPENAI_API_KEY` | `""` | OpenAI API key (required if provider=openai) |
-| `MODOLRAG_CHUNK_SIZE` | `512` | Text chunk size in characters (128-4096) |
-| `MODOLRAG_CHUNK_OVERLAP` | `51` | Overlap between chunks (0-512) |
-| `MODOLRAG_SIMILARITY_TOP_K` | `5` | Default search results count (1-50) |
-| `MODOLRAG_SIMILARITY_THRESHOLD` | `0.7` | Minimum similarity score (0.0-1.0) |
+| `HANIMO_RAG_POSTGRES_URI` | `postgresql://localhost:5432/hanimo-rag` | PostgreSQL connection string |
+| `HANIMO_RAG_API_KEYS` | `""` (no auth) | Comma-separated valid API keys |
+| `HANIMO_RAG_EMBEDDING_PROVIDER` | `ollama` | `ollama` (local) or `openai` (cloud) |
+| `HANIMO_RAG_EMBEDDING_MODEL` | `nomic-embed-text` | Model name for embeddings |
+| `HANIMO_RAG_EMBEDDING_DIMENSIONS` | `768` | Vector dimensions (768 for nomic, 1536 for OpenAI) |
+| `HANIMO_RAG_OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
+| `HANIMO_RAG_OPENAI_API_KEY` | `""` | OpenAI API key (required if provider=openai) |
+| `HANIMO_RAG_CHUNK_SIZE` | `512` | Text chunk size in characters (128-4096) |
+| `HANIMO_RAG_CHUNK_OVERLAP` | `51` | Overlap between chunks (0-512) |
+| `HANIMO_RAG_SIMILARITY_TOP_K` | `5` | Default search results count (1-50) |
+| `HANIMO_RAG_SIMILARITY_THRESHOLD` | `0.7` | Minimum similarity score (0.0-1.0) |
 
 ---
 
@@ -688,7 +688,7 @@ All settings via environment variables with `MODOLRAG_` prefix:
 | Service | Image | Port | Volume |
 |---|---|---|---|
 | `postgres` | `pgvector/pgvector:pg15` | `5439:5432` | `pgdata` (persistent) |
-| `modolrag` | Built from `Dockerfile` | `8009:8000` | — |
+| `hanimo-rag` | Built from `Dockerfile` | `8009:8000` | — |
 
 Ollama runs on the host machine (not containerized) for GPU access.
 
@@ -702,8 +702,8 @@ Stage 2: python:3.11-slim → pip install → copy dashboard → uvicorn
 ### Using OpenAI (no Ollama)
 
 ```bash
-echo 'MODOLRAG_EMBEDDING_PROVIDER=openai' > .env
-echo 'MODOLRAG_OPENAI_API_KEY=sk-xxx' >> .env
+echo 'HANIMO_RAG_EMBEDDING_PROVIDER=openai' > .env
+echo 'HANIMO_RAG_OPENAI_API_KEY=sk-xxx' >> .env
 docker compose up -d
 ```
 
@@ -712,10 +712,10 @@ docker compose up -d
 ```env
 POSTGRES_PASSWORD=your-secure-password
 PG_PORT=5439
-MODOLRAG_PORT=8009
-MODOLRAG_API_KEYS=key1,key2
-MODOLRAG_EMBEDDING_PROVIDER=ollama
-MODOLRAG_EMBEDDING_MODEL=nomic-embed-text
+HANIMO_RAG_PORT=8009
+HANIMO_RAG_API_KEYS=key1,key2
+HANIMO_RAG_EMBEDDING_PROVIDER=ollama
+HANIMO_RAG_EMBEDDING_MODEL=nomic-embed-text
 ```
 
 ---
@@ -727,7 +727,7 @@ MODOLRAG_EMBEDDING_MODEL=nomic-embed-text
 | Approach | Components | Ops Overhead |
 |---|---|---|
 | **Typical RAG** | Pinecone + Elasticsearch + Neo4j + Redis + App DB | 5 services to manage |
-| **ModolRAG** | PostgreSQL (pgvector + tsvector + CTE) | 1 database |
+| **hanimo-rag** | PostgreSQL (pgvector + tsvector + CTE) | 1 database |
 
 - pgvector handles 50M+ vectors at production scale (DiskANN benchmarks)
 - tsvector provides BM25-like full-text search natively
@@ -771,8 +771,8 @@ score(item) = Σ 1/(60 + rank_i)
 ## Project Structure
 
 ```
-ModolRAG/
-├── modolrag/                    # Python package
+hanimo-rag/
+├── hanimo-rag/                    # Python package
 │   ├── main.py                  # FastAPI app + router registration
 │   ├── config.py                # pydantic-settings (env vars)
 │   ├── cli.py                   # CLI: serve, init-db, ingest
@@ -803,10 +803,10 @@ ModolRAG/
 ├── docs/
 │   ├── ARCHITECTURE.md          # Pipelines, RRF, Graph CTE, Docker
 │   ├── SCHEMA.md                # All 8 tables with DDL
-│   └── MODOLAI_INTEGRATION.md   # ModolAI connection guide
+│   └── MODOLAI_INTEGRATION.md   # hanimo-webui connection guide
 ├── start.sh                     # One-command deployment script
 ├── Dockerfile                   # Multi-stage (Node → Python)
-├── docker-compose.yml           # PostgreSQL + ModolRAG
+├── docker-compose.yml           # PostgreSQL + hanimo-rag
 ├── pyproject.toml               # Package config + dependencies
 ├── Makefile                     # dev, build, test, docker targets
 └── LICENSE                      # MIT
@@ -816,16 +816,16 @@ ModolRAG/
 
 | Table | Purpose |
 |---|---|
-| `modolrag_documents` | Document metadata + processing status |
-| `modolrag_document_chunks` | Text chunks + embedding (halfvec 768) + tsvector (auto) |
-| `modolrag_graph_nodes` | Knowledge graph entities |
-| `modolrag_graph_edges` | Entity relationships |
-| `modolrag_communities` | Graph community detection |
-| `modolrag_settings` | RAG engine configuration (singleton) |
-| `modolrag_collections` | Document collections (named sets) |
-| `modolrag_collection_documents` | Collection ↔ Document mapping |
+| `hanimo-rag_documents` | Document metadata + processing status |
+| `hanimo-rag_document_chunks` | Text chunks + embedding (halfvec 768) + tsvector (auto) |
+| `hanimo-rag_graph_nodes` | Knowledge graph entities |
+| `hanimo-rag_graph_edges` | Entity relationships |
+| `hanimo-rag_communities` | Graph community detection |
+| `hanimo-rag_settings` | RAG engine configuration (singleton) |
+| `hanimo-rag_collections` | Document collections (named sets) |
+| `hanimo-rag_collection_documents` | Collection ↔ Document mapping |
 
-All tables use the `modolrag_` prefix to coexist with other applications in the same database.
+All tables use the `hanimo-rag_` prefix to coexist with other applications in the same database.
 
 Full DDL: [docs/SCHEMA.md](docs/SCHEMA.md)
 
@@ -863,6 +863,6 @@ Contributions welcome. Please open an issue first to discuss changes.
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System overview, pipelines, RRF, Graph CTE, Docker |
 | [docs/SCHEMA.md](docs/SCHEMA.md) | Complete DDL for all 8 tables + indexes |
-| [docs/MODOLAI_INTEGRATION.md](docs/MODOLAI_INTEGRATION.md) | Connect ModolRAG to ModolAI |
+| [docs/MODOLAI_INTEGRATION.md](docs/MODOLAI_INTEGRATION.md) | Connect hanimo-rag to hanimo-webui |
 | [localhost:8009/docs](http://localhost:8009/docs) | Live Swagger UI (when server is running) |
 | [localhost:8009/redoc](http://localhost:8009/redoc) | Live ReDoc API documentation |

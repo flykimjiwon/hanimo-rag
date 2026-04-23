@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 echo "=================================="
-echo "  ModolRAG — Test Suite"
+echo "  hanimo-rag — Test Suite"
 echo "=================================="
 echo ""
 
@@ -50,7 +50,7 @@ fi
 echo ""
 echo "[3/3] Lint Check..."
 if command -v ruff > /dev/null 2>&1; then
-  ruff check modolrag/ --select E,F --ignore E501 --quiet && echo "  ✅ No lint errors" || echo "  ⚠️  Lint issues found"
+  ruff check hanimo_rag/ --select E,F --ignore E501 --quiet && echo "  ✅ No lint errors" || echo "  ⚠️  Lint issues found"
 else
   echo "  ⏭️  ruff not installed (skipping)"
 fi

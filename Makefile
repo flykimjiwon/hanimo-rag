@@ -1,7 +1,7 @@
 .PHONY: dev build test lint docker-up docker-down docker-build docker-logs clean
 
 dev:
-	modolrag serve --reload
+	hanimo-rag serve --reload
 
 build:
 	pip install -e .
@@ -10,11 +10,11 @@ test:
 	pytest tests/ -v
 
 lint:
-	ruff check modolrag/ tests/
-	ruff format --check modolrag/ tests/
+	ruff check hanimo_rag/ tests/
+	ruff format --check hanimo_rag/ tests/
 
 format:
-	ruff format modolrag/ tests/
+	ruff format hanimo_rag/ tests/
 
 docker-up:
 	docker compose up -d
@@ -26,7 +26,7 @@ docker-build:
 	docker compose build
 
 docker-logs:
-	docker compose logs -f modolrag
+	docker compose logs -f hanimo-rag
 
 clean:
 	rm -rf build/ dist/ *.egg-info .pytest_cache __pycache__

@@ -1,8 +1,8 @@
-# ModolRAG - Project Guide
+# hanimo-rag - Project Guide
 
 ## Overview
 
-ModolRAG is a **PostgreSQL-native hybrid RAG engine** — vector search, full-text search, and knowledge graph all run inside a single PostgreSQL instance. No Elasticsearch, no Pinecone, no Neo4j.
+hanimo-rag is a **PostgreSQL-native hybrid RAG engine** — vector search, full-text search, and knowledge graph all run inside a single PostgreSQL instance. No Elasticsearch, no Pinecone, no Neo4j.
 
 - **Version**: 0.1.0 (Alpha)
 - **License**: MIT
@@ -12,11 +12,11 @@ ModolRAG is a **PostgreSQL-native hybrid RAG engine** — vector search, full-te
 ## Architecture
 
 ```
-modolrag/
-├── __init__.py          # ModolRAG facade class (sync/async Python SDK)
+hanimo-rag/
+├── __init__.py          # hanimo-rag facade class (sync/async Python SDK)
 ├── main.py              # FastAPI app creation, router registration
 ├── cli.py               # CLI: serve, init-db, ingest, search, ask, quickstart, status
-├── config.py            # Pydantic settings (MODOLRAG_* env vars)
+├── config.py            # Pydantic settings (HANIMO_RAG_* env vars)
 │
 ├── api/                 # FastAPI route handlers
 │   ├── admin.py         # GET /health, GET/PUT /api/settings
@@ -57,7 +57,7 @@ tests/                   # pytest + pytest-asyncio (177 tests across 5 modules)
 
 ## Database Schema (PostgreSQL)
 
-9 tables, all prefixed `modolrag_`:
+9 tables, all prefixed `hanimo-rag_`:
 
 | Table | Purpose |
 |-------|---------|
@@ -77,7 +77,7 @@ Extensions: `vector`, `pg_trgm`, `ltree`
 
 ## API Endpoints (25+)
 
-All under `/api` prefix, auth via `X-API-Key` header (disabled when `MODOLRAG_API_KEYS` is empty).
+All under `/api` prefix, auth via `X-API-Key` header (disabled when `HANIMO_RAG_API_KEYS` is empty).
 
 | Group | Endpoints |
 |-------|-----------|
@@ -109,8 +109,8 @@ ollama serve                     # If not running
 ollama pull nomic-embed-text
 
 # Initialize DB and start server
-modolrag init-db --db postgresql://modolrag:modolrag@localhost:5439/modolrag
-modolrag serve --port 8009 --reload --db postgresql://modolrag:modolrag@localhost:5439/modolrag
+hanimo-rag init-db --db postgresql://hanimo-rag:hanimo-rag@localhost:5439/hanimo-rag
+hanimo-rag serve --port 8009 --reload --db postgresql://hanimo-rag:hanimo-rag@localhost:5439/hanimo-rag
 ```
 
 Or use the all-in-one script: `./start.sh`
@@ -126,50 +126,50 @@ pytest -x -v                     # Stop on first failure, verbose
 ### Linting
 
 ```bash
-ruff check modolrag/             # Lint check
-ruff format modolrag/            # Auto-format
+ruff check hanimo-rag/             # Lint check
+ruff format hanimo-rag/            # Auto-format
 ```
 
 ### Docker (Full Stack)
 
 ```bash
-docker compose up --build        # Build + start (PostgreSQL + ModolRAG)
+docker compose up --build        # Build + start (PostgreSQL + hanimo-rag)
 docker compose down              # Stop
-docker compose logs -f modolrag  # Tail logs
+docker compose logs -f hanimo-rag  # Tail logs
 ```
 
 ### Ports
 
 | Service | Port |
 |---------|------|
-| ModolRAG API + Dashboard | 8009 |
+| hanimo-rag API + Dashboard | 8009 |
 | PostgreSQL | 5439 |
 | Ollama | 11434 (host) |
 
 ### Key Environment Variables
 
 ```bash
-MODOLRAG_POSTGRES_URI=postgresql://modolrag:modolrag@localhost:5439/modolrag
-MODOLRAG_EMBEDDING_PROVIDER=ollama        # ollama | openai | local
-MODOLRAG_EMBEDDING_MODEL=nomic-embed-text
-MODOLRAG_EMBEDDING_DIMENSIONS=768
-MODOLRAG_OLLAMA_BASE_URL=http://localhost:11434
-MODOLRAG_LLM_PROVIDER=ollama              # ollama | openai
-MODOLRAG_LLM_MODEL=llama3
-MODOLRAG_CHUNK_SIZE=512
-MODOLRAG_CHUNK_OVERLAP=51
-MODOLRAG_SIMILARITY_TOP_K=5
-MODOLRAG_SIMILARITY_THRESHOLD=0.7
-MODOLRAG_API_KEYS=                        # empty = no auth
+HANIMO_RAG_POSTGRES_URI=postgresql://hanimo-rag:hanimo-rag@localhost:5439/hanimo-rag
+HANIMO_RAG_EMBEDDING_PROVIDER=ollama        # ollama | openai | local
+HANIMO_RAG_EMBEDDING_MODEL=nomic-embed-text
+HANIMO_RAG_EMBEDDING_DIMENSIONS=768
+HANIMO_RAG_OLLAMA_BASE_URL=http://localhost:11434
+HANIMO_RAG_LLM_PROVIDER=ollama              # ollama | openai
+HANIMO_RAG_LLM_MODEL=llama3
+HANIMO_RAG_CHUNK_SIZE=512
+HANIMO_RAG_CHUNK_OVERLAP=51
+HANIMO_RAG_SIMILARITY_TOP_K=5
+HANIMO_RAG_SIMILARITY_THRESHOLD=0.7
+HANIMO_RAG_API_KEYS=                        # empty = no auth
 ```
 
 ## Conventions
 
-- All DB tables prefixed with `modolrag_`
+- All DB tables prefixed with `hanimo-rag_`
 - Embeddings stored as `halfvec(768)` — change dimension in schema.sql if using different model
 - Async-first: all DB operations use asyncpg, all HTTP calls use httpx
 - Parsers follow ABC pattern (ParserBase) with lazy imports for heavy deps
-- Config via pydantic-settings with `MODOLRAG_` prefix env vars
+- Config via pydantic-settings with `HANIMO_RAG_` prefix env vars
 - RRF fusion weights: vector=0.5, FTS=0.3, graph=0.2 (k=60)
 
 ## Testing

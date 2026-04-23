@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: '/dashboard/',
   build: {
-    outDir: '../modolrag/static',
+    outDir: '../hanimo-rag/static',
     emptyOutDir: true,
   },
   server: {

@@ -1,13 +1,13 @@
-# ModolRAG Architecture
+# hanimo-rag Architecture
 
 ## System Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         ModolRAG                                │
+│                         hanimo-rag                                │
 │                                                                 │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────────────┐  │
-│  │ REST API │  │Dashboard │  │   CLI    │  │ ModolAI       │  │
+│  │ REST API │  │Dashboard │  │   CLI    │  │ hanimo-webui       │  │
 │  │ FastAPI  │  │React SPA │  │ argparse │  │ (HTTP client) │  │
 │  └────┬─────┘  └──────────┘  └────┬─────┘  └───────┬───────┘  │
 │       │                           │                 │          │
@@ -41,13 +41,13 @@ Upload (multipart)
   → Parse document (pypdf/python-docx/openpyxl/python-pptx/markdown/text)
   → Chunk text (RecursiveChunker: separators \n\n → \n → ". " → " " → char)
   → Embed chunks (Ollama or OpenAI, batch processing)
-  → Store in modolrag_document_chunks (pgvector halfvec + auto tsvector)
+  → Store in hanimo-rag_document_chunks (pgvector halfvec + auto tsvector)
   → Extract entities/relationships (LLM-based, best-effort)
-  → Build graph nodes/edges (modolrag_graph_nodes, modolrag_graph_edges)
+  → Build graph nodes/edges (hanimo-rag_graph_nodes, hanimo-rag_graph_edges)
   → Update status: vectorized, progress: 100%
 ```
 
-Each step updates `modolrag_documents.status` and `vectorization_progress` for real-time tracking. On failure, `status='error'` with `error_message`.
+Each step updates `hanimo-rag_documents.status` and `vectorization_progress` for real-time tracking. On failure, `status='error'` with `error_message`.
 
 Graph extraction is **best-effort** — if the LLM is unavailable, the pipeline completes without graph data. Documents are still searchable via vector and FTS.
 
@@ -104,15 +104,15 @@ PostgreSQL recursive CTEs are sufficient and avoid the operational complexity of
 WITH RECURSIVE graph_expansion AS (
     -- Seed: start from matched nodes
     SELECT id AS node_id, 0 AS depth, ARRAY[id] AS visited
-    FROM modolrag_graph_nodes WHERE id = ANY($seed_ids)
+    FROM hanimo-rag_graph_nodes WHERE id = ANY($seed_ids)
     
     UNION ALL
     
     -- Expand: follow edges bidirectionally
     SELECT n.id, ge.depth + 1, ge.visited || n.id
     FROM graph_expansion ge
-    JOIN modolrag_graph_edges e ON (e.source_id = ge.node_id OR e.target_id = ge.node_id)
-    JOIN modolrag_graph_nodes n ON (n.id = CASE WHEN e.source_id = ge.node_id 
+    JOIN hanimo-rag_graph_edges e ON (e.source_id = ge.node_id OR e.target_id = ge.node_id)
+    JOIN hanimo-rag_graph_nodes n ON (n.id = CASE WHEN e.source_id = ge.node_id 
                                                  THEN e.target_id ELSE e.source_id END)
     WHERE ge.depth < 2                    -- Max 2 hops
       AND NOT (n.id = ANY(ge.visited))    -- Cycle prevention
@@ -190,7 +190,7 @@ Available at:
 The React SPA dashboard is served from FastAPI as static files:
 
 ```python
-# modolrag/main.py
+# hanimo-rag/main.py
 static_dir = Path(__file__).parent / "static"
 app.mount("/dashboard", StaticFiles(directory=str(static_dir), html=True))
 ```
@@ -208,7 +208,7 @@ Multi-stage build with three services:
 │  docker-compose.yml                                 │
 │                                                     │
 │  ┌──────────┐  ┌──────────┐  ┌──────────────────┐  │
-│  │ postgres  │  │ ollama   │  │ modolrag         │  │
+│  │ postgres  │  │ ollama   │  │ hanimo-rag         │  │
 │  │ pgvector  │  │ nomic-   │  │ FastAPI + SPA    │  │
 │  │ :pg15     │  │ embed    │  │ :8000            │  │
 │  │ :5432     │  │ :11434   │  │                  │  │
@@ -224,20 +224,20 @@ Multi-stage build with three services:
 ```
 Stage 1: node:20-slim
   → npm ci → npm run build
-  → Output: modolrag/static/ (dashboard)
+  → Output: hanimo-rag/static/ (dashboard)
 
 Stage 2: python:3.11-slim
-  → pip install modolrag
-  → COPY --from=stage1 modolrag/static/
-  → uvicorn modolrag.main:app
+  → pip install hanimo-rag
+  → COPY --from=stage1 hanimo-rag/static/
+  → uvicorn hanimo_rag.main:app
 ```
 
 ### Service Dependencies
 
 ```
-postgres ←(healthcheck)── modolrag
-ollama   ←(healthcheck)── modolrag
+postgres ←(healthcheck)── hanimo-rag
+ollama   ←(healthcheck)── hanimo-rag
 ```
 
-ModolRAG waits for both PostgreSQL and Ollama to be healthy before starting.
+hanimo-rag waits for both PostgreSQL and Ollama to be healthy before starting.
 On startup, it auto-initializes the database schema (`init_schema()`).

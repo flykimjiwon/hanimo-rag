@@ -58,8 +58,8 @@ npm-debug.log
 yarn-error.log
 
 # Static files (but keep .gitkeep)
-modolrag/static/*
-!modolrag/static/.gitkeep
+hanimo_rag/static/*
+!hanimo_rag/static/.gitkeep
 
 # Logs
 *.log

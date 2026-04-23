@@ -23,7 +23,7 @@ export default function Layout() {
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white text-sm font-bold">M</div>
             <div>
-              <h1 data-heading className="text-[15px] font-bold text-slate-900 dark:text-[#FAFAFA] tracking-tight">ModolRAG</h1>
+              <h1 data-heading className="text-[15px] font-bold text-slate-900 dark:text-[#FAFAFA] tracking-tight">hanimo-rag</h1>
               <p className="text-[10px] text-slate-400 dark:text-[#A1A1AA] tracking-wide">RAG Engine Builder</p>
             </div>
           </div>

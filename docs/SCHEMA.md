@@ -1,6 +1,6 @@
-# ModolRAG Database Schema
+# hanimo-rag Database Schema
 
-All tables use the `modolrag_` prefix to coexist with host application tables (e.g., ModolAI) in the same PostgreSQL database.
+All tables use the `hanimo-rag_` prefix to coexist with host application tables (e.g., hanimo-webui) in the same PostgreSQL database.
 
 ## Required Extensions
 
@@ -15,33 +15,33 @@ CREATE EXTENSION IF NOT EXISTS ltree;     -- hierarchical labels for communities
 ## Entity-Relationship Diagram
 
 ```
-modolrag_documents
-  ├── 1:N → modolrag_document_chunks (document_id FK, CASCADE delete)
+hanimo-rag_documents
+  ├── 1:N → hanimo-rag_document_chunks (document_id FK, CASCADE delete)
   │              ├── embedding halfvec(1536) → HNSW index
   │              ├── fts tsvector GENERATED  → GIN index
   │              └── parent_chunk_id (self-ref, parent-child chunking)
   │
-modolrag_graph_nodes (UNIQUE: namespace + title)
-  ├── 1:N → modolrag_graph_edges (source_id FK, CASCADE)
-  └── 1:N → modolrag_graph_edges (target_id FK, CASCADE)
+hanimo-rag_graph_nodes (UNIQUE: namespace + title)
+  ├── 1:N → hanimo-rag_graph_edges (source_id FK, CASCADE)
+  └── 1:N → hanimo-rag_graph_edges (target_id FK, CASCADE)
               └── UNIQUE: namespace + source_id + target_id + relation_type
 
-modolrag_communities
+hanimo-rag_communities
   └── path ltree (hierarchical community structure)
 
-modolrag_settings (singleton row)
+hanimo-rag_settings (singleton row)
 ```
 
 ---
 
 ## Tables
 
-### 1. modolrag_documents
+### 1. hanimo-rag_documents
 
 Stores uploaded document metadata and processing status.
 
 ```sql
-CREATE TABLE IF NOT EXISTS modolrag_documents (
+CREATE TABLE IF NOT EXISTS hanimo-rag_documents (
     id                     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     file_name              TEXT NOT NULL,
     original_name          TEXT NOT NULL,
@@ -62,31 +62,31 @@ CREATE TABLE IF NOT EXISTS modolrag_documents (
 );
 ```
 
-### 2. modolrag_document_chunks
+### 2. hanimo-rag_document_chunks
 
 Text chunks with vector embeddings and auto-generated FTS column.
 
 ```sql
-CREATE TABLE IF NOT EXISTS modolrag_document_chunks (
+CREATE TABLE IF NOT EXISTS hanimo-rag_document_chunks (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    document_id     UUID NOT NULL REFERENCES modolrag_documents(id) ON DELETE CASCADE,
+    document_id     UUID NOT NULL REFERENCES hanimo-rag_documents(id) ON DELETE CASCADE,
     content         TEXT NOT NULL,
     embedding       halfvec(1536),
     fts             tsvector GENERATED ALWAYS AS (to_tsvector('english', content)) STORED,
     chunk_index     INTEGER NOT NULL,
     chunk_level     INTEGER DEFAULT 0,
-    parent_chunk_id UUID REFERENCES modolrag_document_chunks(id) ON DELETE SET NULL,
+    parent_chunk_id UUID REFERENCES hanimo-rag_document_chunks(id) ON DELETE SET NULL,
     metadata        JSONB DEFAULT '{}',
     created_at      TIMESTAMPTZ DEFAULT now()
 );
 ```
 
-### 3. modolrag_graph_nodes
+### 3. hanimo-rag_graph_nodes
 
 Knowledge graph entities.
 
 ```sql
-CREATE TABLE IF NOT EXISTS modolrag_graph_nodes (
+CREATE TABLE IF NOT EXISTS hanimo-rag_graph_nodes (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     namespace  TEXT DEFAULT 'default',
     title      TEXT NOT NULL,
@@ -101,16 +101,16 @@ CREATE TABLE IF NOT EXISTS modolrag_graph_nodes (
 );
 ```
 
-### 4. modolrag_graph_edges
+### 4. hanimo-rag_graph_edges
 
 Relationships between graph nodes.
 
 ```sql
-CREATE TABLE IF NOT EXISTS modolrag_graph_edges (
+CREATE TABLE IF NOT EXISTS hanimo-rag_graph_edges (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     namespace       TEXT DEFAULT 'default',
-    source_id       UUID NOT NULL REFERENCES modolrag_graph_nodes(id) ON DELETE CASCADE,
-    target_id       UUID NOT NULL REFERENCES modolrag_graph_nodes(id) ON DELETE CASCADE,
+    source_id       UUID NOT NULL REFERENCES hanimo-rag_graph_nodes(id) ON DELETE CASCADE,
+    target_id       UUID NOT NULL REFERENCES hanimo-rag_graph_nodes(id) ON DELETE CASCADE,
     relation_type   TEXT NOT NULL,
     weight          REAL DEFAULT 1.0,
     context_snippet TEXT,
@@ -122,12 +122,12 @@ CREATE TABLE IF NOT EXISTS modolrag_graph_edges (
 
 On conflict (duplicate edge): `weight = weight + 1.0` (accumulate evidence).
 
-### 5. modolrag_communities
+### 5. hanimo-rag_communities
 
 Hierarchical community detection for graph summarization.
 
 ```sql
-CREATE TABLE IF NOT EXISTS modolrag_communities (
+CREATE TABLE IF NOT EXISTS hanimo-rag_communities (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     path            ltree,
     summary         TEXT,
@@ -139,12 +139,12 @@ CREATE TABLE IF NOT EXISTS modolrag_communities (
 );
 ```
 
-### 6. modolrag_settings
+### 6. hanimo-rag_settings
 
 Singleton configuration table.
 
 ```sql
-CREATE TABLE IF NOT EXISTS modolrag_settings (
+CREATE TABLE IF NOT EXISTS hanimo-rag_settings (
     id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     chunk_size           INTEGER DEFAULT 512   CHECK (chunk_size BETWEEN 128 AND 4096),
     chunk_overlap        INTEGER DEFAULT 51    CHECK (chunk_overlap BETWEEN 0 AND 512),
@@ -180,11 +180,11 @@ HNSW parameters: `m=16, ef_construction=64` (balanced recall/build-time).
 
 ## Supabase Compatibility
 
-ModolRAG uses standard PostgreSQL features only:
+hanimo-rag uses standard PostgreSQL features only:
 - `gen_random_uuid()` (built-in since PG13)
 - `pgvector` extension (available on Supabase)
 - `halfvec` type (pgvector 0.7+)
 - No Supabase Edge Functions dependency
 - Connection via standard `POSTGRES_URI`
 
-The `modolrag_` prefix ensures zero conflicts with Supabase's own tables (`auth.*`, `storage.*`, etc.).
+The `hanimo-rag_` prefix ensures zero conflicts with Supabase's own tables (`auth.*`, `storage.*`, etc.).

@@ -5,11 +5,11 @@ import { useI18n } from '../i18n'
 
 export default function Settings() {
   const { t } = useI18n()
-  const [s, setS] = useState<Record<string, any>>({}); const [key, setKey] = useState(localStorage.getItem('modolrag-api-key') || ''); const [ok, setOk] = useState(false)
+  const [s, setS] = useState<Record<string, any>>({}); const [key, setKey] = useState(localStorage.getItem('hanimo-rag-api-key') || ''); const [ok, setOk] = useState(false)
   useEffect(() => { api.getSettings().then(setS).catch(() => {}) }, [])
   const save = async () => {
     await api.updateSettings({ chunk_size: s.chunk_size, chunk_overlap: s.chunk_overlap, embedding_model: s.embedding_model, similarity_top_k: s.similarity_top_k, similarity_threshold: s.similarity_threshold })
-    localStorage.setItem('modolrag-api-key', key); setOk(true); setTimeout(() => setOk(false), 2000)
+    localStorage.setItem('hanimo-rag-api-key', key); setOk(true); setTimeout(() => setOk(false), 2000)
   }
   const up = (k: string, v: any) => setS(p => ({ ...p, [k]: v }))
   const ic = "w-full px-4 py-3 rounded-2xl text-sm bg-slate-50 dark:bg-[#27272A] border border-slate-200 dark:border-[#3F3F46] text-slate-900 dark:text-[#FAFAFA] focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"

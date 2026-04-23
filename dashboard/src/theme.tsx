@@ -5,11 +5,11 @@ interface Ctx { theme: Theme; toggle: () => void }
 const ThemeCtx = createContext<Ctx>({ theme: 'light', toggle: () => {} })
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('modolrag-theme') as Theme) || 'light')
+  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('hanimo-rag-theme') as Theme) || 'light')
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
-    localStorage.setItem('modolrag-theme', theme)
+    localStorage.setItem('hanimo-rag-theme', theme)
   }, [theme])
 
   return <ThemeCtx.Provider value={{ theme, toggle: () => setTheme(t => t === 'light' ? 'dark' : 'light') }}>{children}</ThemeCtx.Provider>

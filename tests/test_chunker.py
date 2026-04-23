@@ -1,7 +1,7 @@
 """Test chunking engine — recursive, page, semantic."""
 import pytest
 from unittest.mock import AsyncMock
-from modolrag.core.chunker import RecursiveChunker, PageChunker, SemanticChunker, Chunk, get_chunker
+from hanimo_rag.core.chunker import RecursiveChunker, PageChunker, SemanticChunker, Chunk, get_chunker
 
 
 class TestRecursiveChunker:

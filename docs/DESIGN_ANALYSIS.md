@@ -1,4 +1,4 @@
-# ModolRAG Design Analysis
+# hanimo-rag Design Analysis
 
 ## 1. 비교 대상
 

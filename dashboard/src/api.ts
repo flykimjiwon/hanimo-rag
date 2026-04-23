@@ -1,7 +1,7 @@
 const API_BASE = '/api'
 
 function getApiKey(): string {
-  return localStorage.getItem('modolrag-api-key') || ''
+  return localStorage.getItem('hanimo-rag-api-key') || ''
 }
 
 async function apiFetch(path: string, options: RequestInit = {}) {

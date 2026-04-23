@@ -1,8 +1,8 @@
 """Test document parsers — 6 formats."""
 import os
 import tempfile
-from modolrag.parsers import get_parser, ParsedDocument, mime_from_extension
-from modolrag.parsers.base import ParserBase
+from hanimo_rag.parsers import get_parser, ParsedDocument, mime_from_extension
+from hanimo_rag.parsers.base import ParserBase
 
 
 def _write_tmp(content: str, suffix: str) -> str:
@@ -54,7 +54,7 @@ class TestMarkdownParser:
 
 class TestMarkdownFrontmatter:
     def test_frontmatter_extracted(self):
-        from modolrag.parsers.markdown import _parse_frontmatter
+        from hanimo_rag.parsers.markdown import _parse_frontmatter
         content = "---\ntitle: Test\nauthor: Me\n---\n\n# Hello"
         fm, body = _parse_frontmatter(content)
         assert "title" in fm
@@ -62,14 +62,14 @@ class TestMarkdownFrontmatter:
         assert "Hello" in body
 
     def test_no_frontmatter(self):
-        from modolrag.parsers.markdown import _parse_frontmatter
+        from hanimo_rag.parsers.markdown import _parse_frontmatter
         content = "# No frontmatter here"
         fm, body = _parse_frontmatter(content)
         assert fm == {}
         assert body == content
 
     def test_empty_frontmatter(self):
-        from modolrag.parsers.markdown import _parse_frontmatter
+        from hanimo_rag.parsers.markdown import _parse_frontmatter
         content = "---\n---\n\nBody text"
         fm, body = _parse_frontmatter(content)
         assert fm == {}
@@ -108,7 +108,7 @@ class TestMarkdownEncodingFallback:
 
     def test_nonexistent_file(self):
         p = get_parser("text/markdown")
-        result = p.parse("/tmp/nonexistent_modolrag_test_file.md")
+        result = p.parse("/tmp/nonexistent_hanimo_rag_test_file.md")
         assert "error" in result.metadata
 
 
@@ -176,7 +176,7 @@ class TestTextParserEdgeCases:
     def test_nonexistent_file(self):
         """Nonexistent file should return error in metadata, not raise."""
         p = get_parser("text/plain")
-        result = p.parse("/tmp/nonexistent_modolrag_xyz_test.txt")
+        result = p.parse("/tmp/nonexistent_hanimo_rag_xyz_test.txt")
         assert "error" in result.metadata
 
     def test_multiline_content(self):

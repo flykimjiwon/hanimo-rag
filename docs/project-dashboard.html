@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ModolRAG — 프로젝트 대시보드</title>
+<title>hanimo-rag — 프로젝트 대시보드</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
 
@@ -257,7 +257,7 @@
   <div class="header">
     <div class="header-left">
       <div class="logo">M</div>
-      <h1>ModolRAG <span>프로젝트 대시보드</span></h1>
+      <h1>hanimo-rag <span>프로젝트 대시보드</span></h1>
     </div>
     <div class="header-right">
       <span class="badge badge-version">v0.1.0</span>
@@ -267,13 +267,13 @@
 
   <!-- 프로젝트 설명 -->
   <div class="desc-block">
-    <h3>ModolRAG이란?</h3>
+    <h3>hanimo-rag이란?</h3>
     <p>
-      ModolRAG는 <strong>PostgreSQL 하나로 벡터 검색 + 전문 검색 + 지식 그래프</strong>를 모두 처리하는 하이브리드 RAG(Retrieval-Augmented Generation) 엔진입니다.
+      hanimo-rag는 <strong>PostgreSQL 하나로 벡터 검색 + 전문 검색 + 지식 그래프</strong>를 모두 처리하는 하이브리드 RAG(Retrieval-Augmented Generation) 엔진입니다.
       Elasticsearch, Pinecone, Neo4j 같은 별도 서비스 없이 <span class="highlight">하나의 데이터베이스</span>에서 모든 검색 기능이 동작합니다.
     </p>
     <p>
-      <strong>pip install modolrag</strong> 한 줄이면 설치 완료. 문서를 업로드하면 자동으로 파싱 &rarr; 청킹 &rarr; 임베딩 &rarr; 저장 &rarr; 그래프 구축까지 처리하고,
+      <strong>pip install hanimo-rag</strong> 한 줄이면 설치 완료. 문서를 업로드하면 자동으로 파싱 &rarr; 청킹 &rarr; 임베딩 &rarr; 저장 &rarr; 그래프 구축까지 처리하고,
       <span class="highlight">RRF(Reciprocal Rank Fusion)</span> 알고리즘으로 3가지 검색 결과를 융합하여 최고 품질의 검색 결과를 반환합니다.
     </p>
     <p>
@@ -508,7 +508,7 @@
       <div class="task-row">
         <span class="task-id">T22</span>
         <span class="task-status status-done">완료</span>
-        <span class="task-title">ModolAI 연동 가이드<span class="sub">docs/MODOLAI_INTEGRATION.md</span></span>
+        <span class="task-title">hanimo-webui 연동 가이드<span class="sub">docs/MODOLAI_INTEGRATION.md</span></span>
         <span class="task-category">writing</span>
         <span class="task-wave-badge">docs</span>
       </div>
@@ -586,7 +586,7 @@
       <div class="task-row">
         <span class="task-id">B4</span>
         <span class="task-status status-new">추가</span>
-        <span class="task-title">3줄 Python API 파사드<span class="sub">ModolRAG 클래스: 동기 + 비동기, 자동 초기화</span></span>
+        <span class="task-title">3줄 Python API 파사드<span class="sub">hanimo-rag 클래스: 동기 + 비동기, 자동 초기화</span></span>
         <span class="task-category">__init__.py</span>
         <span class="task-wave-badge">feat</span>
       </div>
@@ -710,18 +710,18 @@
       <div class="commit-row"><span class="commit-hash">f1fa221</span><span class="commit-msg">stop.sh 추가 &mdash; 원커맨드 서비스 중지</span></div>
       <div class="commit-row"><span class="commit-hash">12256be</span><span class="commit-msg">대시보드 한영 전환 (i18n) + 다크 모드 + Pretendard 폰트 + 리디자인</span></div>
       <div class="commit-row"><span class="commit-hash">07021de</span><span class="commit-msg">README 전면 재작성 &mdash; 620줄, 비개발자 가이드, 전체 API 레퍼런스</span></div>
-      <div class="commit-row"><span class="commit-hash">906366e</span><span class="commit-msg">문서 컬렉션 (범위 검색) + ModolAI 스킬 설정</span></div>
+      <div class="commit-row"><span class="commit-hash">906366e</span><span class="commit-msg">문서 컬렉션 (범위 검색) + hanimo-webui 스킬 설정</span></div>
       <div class="commit-row"><span class="commit-hash">7889110</span><span class="commit-msg">스키마 차원 1536&rarr;768 수정, Dockerfile npm 호환성, UUID 호환</span></div>
       <div class="commit-row"><span class="commit-hash">8a4f72d</span><span class="commit-msg">원커맨드 배포 (start.sh) + 포트 설정 + 문서 업데이트</span></div>
       <div class="commit-row"><span class="commit-hash">b0024e3</span><span class="commit-msg">OpenAPI/Swagger 강화 &mdash; 응답 모델, 예제, 태그 설명</span></div>
-      <div class="commit-row"><span class="commit-hash">61acb2c</span><span class="commit-msg">ModolRAG v0.1.0 완성 &mdash; 하이브리드 RAG 엔진 (백엔드 + 대시보드 + 문서)</span></div>
-      <div class="commit-row"><span class="commit-hash">4ba3db8</span><span class="commit-msg">ModolRAG 프로젝트 구조 스캐폴딩</span></div>
+      <div class="commit-row"><span class="commit-hash">61acb2c</span><span class="commit-msg">hanimo-rag v0.1.0 완성 &mdash; 하이브리드 RAG 엔진 (백엔드 + 대시보드 + 문서)</span></div>
+      <div class="commit-row"><span class="commit-hash">4ba3db8</span><span class="commit-msg">hanimo-rag 프로젝트 구조 스캐폴딩</span></div>
     </div>
   </div>
 
   <!-- Footer -->
   <div class="footer">
-    ModolRAG &copy; 2026 &mdash; PostgreSQL 기반 하이브리드 RAG 엔진 &mdash; MIT 라이선스
+    hanimo-rag &copy; 2026 &mdash; PostgreSQL 기반 하이브리드 RAG 엔진 &mdash; MIT 라이선스
   </div>
 
 </div>
