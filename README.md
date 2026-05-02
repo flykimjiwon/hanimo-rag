@@ -2,10 +2,10 @@
 
 **PostgreSQL-native Hybrid RAG Engine**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)](https://fastapi.tiangolo.com)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791.svg)](https://www.postgresql.org)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-f5a623.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-f5a623.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-f5a623.svg)](https://fastapi.tiangolo.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-f5a623.svg)](https://www.postgresql.org)
 
 hanimo-rag is a lightweight, pip-installable RAG (Retrieval-Augmented Generation) engine that runs entirely on PostgreSQL. Upload documents, group them into collections, connect an LLM, and get a production-ready search API — no Elasticsearch, no separate vector database, no graph database.
 
