@@ -47,6 +47,16 @@ htmlcov/
 .env.local
 .env.*.local
 
+# OMC runtime state (per-session, not source)
+.omc/state/
+.omc/logs/
+.omc/notepad.md
+.omc/project-memory.json
+.omc/sessions/
+
+# Design source archives (zip duplicates of unpacked folders)
+hanimo_rag_클로드디자인.zip
+
 # Database
 *.db
 *.sqlite
