@@ -1,0 +1,60 @@
+/* ────────────────────────────────────────────────
+ * hanimo-rag dashboard — base styles
+ *
+ * 폰트: 시스템 폰트 폴백 + 로컬 번들 우선 (CDN 호출 0)
+ * 정책: hanimo-code/docs/policy/telemetry-and-privacy.md §4
+ * 브랜드: Modol the Honey-Bee Bichon (hanimo-code/docs/branding/BRAND.md)
+ * ──────────────────────────────────────────────── */
+
+@import "tailwindcss";
+
+/* Tailwind v4: class-based dark mode */
+@variant dark (&:where(.dark, .dark *));
+
+/* hanimo Brand Tokens — 5 repo 공유
+   Synced from hanimo-code/docs/branding/tokens.css */
+@theme {
+  --color-hanimo-amber:        #f5a623;
+  --color-hanimo-amber-soft:   #ffd089;
+  --color-hanimo-amber-deep:   #d99437;
+  --color-hanimo-cream:        #f0e4d3;
+  --color-hanimo-brown:        #1a1410;
+  --color-hanimo-good:         #6cae75;
+  --color-hanimo-warn:         #e8a317;
+  --color-hanimo-error:        #d97757;
+  --color-hanimo-info:         #6b8db5;
+
+  --font-hanimo-ui:    'Pretendard', 'Noto Sans KR', system-ui, -apple-system, 'SF Pro Text', sans-serif;
+  --font-hanimo-mono:  'JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', ui-monospace, monospace;
+}
+
+:root {
+  /* CSS variable form (non-Tailwind consumers) */
+  --hanimo-amber:        #f5a623;
+  --hanimo-amber-soft:   #ffd089;
+  --hanimo-amber-deep:   #d99437;
+  --hanimo-amber-glow:   rgba(245, 166, 35, 0.22);
+  --hanimo-cream:        #f0e4d3;
+  --hanimo-brown:        #1a1410;
+}
+
+/* Light/dark 공통 폰트 — 시스템 폴백 우선 (CDN 폰트 미사용) */
+body {
+  margin: 0;
+  font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.dark h1, .dark h2, .dark h3, .dark h4,
+.dark [data-heading] {
+  font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.dark ::-webkit-scrollbar-thumb { background: #3f3f46; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #52525b; }
