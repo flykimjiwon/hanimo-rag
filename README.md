@@ -6,6 +6,8 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Node 18+](https://img.shields.io/badge/node-18+-green.svg)](https://nodejs.org/)
 
+[한국어 README](README.ko.md) · [v1 → v2 Migration](docs/MIGRATION_v1_to_v2.md) · [v2.0.0 Release Notes](docs/RELEASE_NOTES_v2.0.0.md) · [Changelog](CHANGELOG.md)
+
 > 🍯 **벡터 DB는 끝났다. LLM이 답이다.**
 > 임베딩 모델 0개, 벡터 DB 0개, Docker 없음. JSON 파일 하나로 시작하는 차세대 RAG 엔진.
 >
