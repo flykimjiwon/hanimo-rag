@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>hanimo-rag — Vector DB는 끝났다. LLM이 답이다.</title>
+<meta name="description" content="Agentic LiteRAG — LLM이 직접 인덱싱하고 검색하는 차세대 RAG 엔진. PostgreSQL/Pinecone/임베딩 모델 0개. JSON 파일 1개로 시작."/>
+<meta property="og:title" content="hanimo-rag — Vector DB는 끝났다"/>
+<meta property="og:description" content="Agentic LiteRAG. LLM only. No vector infrastructure."/>
+<style>
+  :root {
+    --honey-50:#FFFBEB; --honey-100:#FEF3C7; --honey-200:#FDE68A;
+    --honey-300:#FCD34D; --honey-400:#FBBF24; --honey-500:#F59E0B;
+    --honey-600:#D97706; --honey-700:#B45309; --honey-800:#92400E; --honey-900:#78350F;
+    --ink-900:#0A0A0A; --ink-800:#171717; --ink-700:#262626; --ink-600:#404040;
+    --ink-500:#737373; --ink-400:#A3A3A3; --ink-300:#D4D4D4; --ink-200:#E5E5E5;
+    --ink-100:#F5F5F5; --ink-50:#FAFAFA; --ink-0:#FFFFFF;
+    --green-500:#10B981; --red-500:#EF4444;
+    --bg: var(--ink-50); --surface: var(--ink-0); --text: var(--ink-900);
+    --text-dim: var(--ink-600); --text-faint: var(--ink-500);
+    --border: var(--ink-200); --border-soft: var(--ink-100);
+    --accent: var(--honey-500); --accent-text: var(--ink-900);
+    --code-bg: var(--ink-900); --code-text: var(--honey-200);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; color: var(--text); background: var(--bg); line-height: 1.55; }
+  code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; border: 0; background: transparent; color: inherit; }
+  img, svg { display: block; max-width: 100%; }
+
+  .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* Nav */
+  nav.site { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); background: rgba(250,250,250,0.78); border-bottom: 1px solid var(--border-soft); }
+  nav.site .row { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  nav.site .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+  nav.site .brand .dot { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); display: grid; place-items: center; color: var(--ink-900); font-weight: 800; font-size: 12px; }
+  nav.site ul { display: flex; gap: 24px; list-style: none; font-size: 13.5px; color: var(--text-dim); }
+  nav.site ul a:hover { color: var(--text); }
+  nav.site .ctas { display: flex; gap: 8px; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; transition: all .15s; }
+  .btn.primary { background: var(--accent); color: var(--accent-text); }
+  .btn.primary:hover { background: var(--honey-600); color: white; }
+  .btn.ghost { color: var(--text); border: 1px solid var(--border); }
+  .btn.ghost:hover { border-color: var(--ink-400); }
+  .btn.lg { padding: 12px 20px; font-size: 14px; }
+
+  /* Hero */
+  .hero { padding: 80px 0 60px; text-align: center; }
+  .hero .badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; background: var(--honey-100); border: 1px solid var(--honey-200); color: var(--honey-800); font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em; margin-bottom: 22px; }
+  .hero h1 { font-size: 56px; line-height: 1.07; letter-spacing: -0.025em; font-weight: 800; max-width: 880px; margin: 0 auto 18px; }
+  .hero h1 .accent { background: linear-gradient(120deg, var(--honey-600), var(--honey-400)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero .lede { font-size: 18px; color: var(--text-dim); max-width: 640px; margin: 0 auto 32px; }
+  .hero .lede strong { color: var(--text); font-weight: 600; }
+  .hero .cta-row { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
+  .hero .install { font-family: ui-monospace, monospace; font-size: 13.5px; padding: 10px 14px; background: var(--ink-900); color: var(--honey-200); border-radius: 8px; display: inline-flex; gap: 8px; align-items: center; }
+  .hero .install .pkg { color: var(--ink-400); user-select: none; }
+
+  /* Concept diagram */
+  .diagram { padding: 40px 0; }
+  .diagram .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 32px; }
+  .diagram h2 { font-size: 13px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; text-align: center; margin-bottom: 28px; }
+  .diagram .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .diagram .col { padding: 20px; border-radius: 10px; border: 1px solid var(--border-soft); }
+  .diagram .col.bad { background: var(--ink-50); }
+  .diagram .col.good { background: var(--honey-50); border-color: var(--honey-200); }
+  .diagram .col h3 { font-size: 13.5px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .diagram .col.bad h3 { color: var(--ink-700); }
+  .diagram .col.good h3 { color: var(--honey-800); }
+  .diagram .flow { display: flex; flex-direction: column; gap: 6px; }
+  .diagram .step { padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; font-size: 12.5px; font-family: ui-monospace, monospace; color: var(--text-dim); }
+  .diagram .col.good .step { border-color: var(--honey-300); color: var(--honey-900); }
+  .diagram .step.muted { opacity: 0.5; text-decoration: line-through; }
+  .diagram .arrow { text-align: center; font-size: 12px; color: var(--text-faint); padding: 1px 0; }
+
+  /* Section */
+  section { padding: 70px 0; }
+  section h2.title { font-size: 36px; font-weight: 800; letter-spacing: -0.02em; text-align: center; margin-bottom: 12px; }
+  section h2.title .accent { color: var(--honey-600); }
+  section p.kicker { text-align: center; color: var(--text-dim); font-size: 15px; max-width: 580px; margin: 0 auto 44px; }
+
+  /* Comparison table */
+  .compare { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .compare table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .compare th, .compare td { padding: 14px 18px; text-align: left; border-bottom: 1px solid var(--border-soft); }
+  .compare thead th { background: var(--ink-50); font-size: 12px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; }
+  .compare thead th.win { background: var(--honey-100); color: var(--honey-800); }
+  .compare tbody tr:last-child td { border-bottom: 0; }
+  .compare tbody td.dim { color: var(--text-dim); }
+  .compare tbody td.win { background: var(--honey-50); color: var(--honey-900); font-weight: 500; }
+  .compare tbody td.feature { font-weight: 600; color: var(--text); }
+  .compare .check { color: var(--green-500); font-weight: 700; }
+  .compare .cross { color: var(--red-500); font-weight: 700; }
+
+  /* Code blocks (tabs) */
+  .codetabs { background: var(--ink-900); border-radius: 12px; overflow: hidden; }
+  .codetabs .tabs { display: flex; gap: 0; background: var(--ink-800); padding: 0 8px; }
+  .codetabs .tabs button { padding: 12px 16px; font-size: 12.5px; font-weight: 600; color: var(--ink-400); border-bottom: 2px solid transparent; }
+  .codetabs .tabs button.active { color: var(--honey-300); border-bottom-color: var(--honey-500); }
+  .codetabs pre { padding: 22px 24px; font-size: 13px; line-height: 1.65; color: var(--honey-200); overflow-x: auto; }
+  .codetabs .panel { display: none; }
+  .codetabs .panel.active { display: block; }
+  .codetabs .panel .lang { color: var(--ink-500); font-size: 11px; padding: 8px 24px 0; font-family: ui-sans-serif, system-ui, sans-serif; }
+
+  /* Models grid */
+  .models { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .model { padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+  .model.featured { background: var(--honey-50); border-color: var(--honey-300); }
+  .model .name { font-size: 13.5px; font-weight: 700; margin-bottom: 4px; }
+  .model .meta { font-size: 11px; color: var(--text-faint); font-family: ui-monospace, monospace; margin-bottom: 8px; }
+  .model .use { font-size: 12px; color: var(--text-dim); line-height: 1.45; }
+
+  /* Video placeholder */
+  .video { background: var(--surface); border: 2px dashed var(--border); border-radius: 14px; aspect-ratio: 16/9; display: grid; place-items: center; color: var(--text-faint); font-size: 14px; font-weight: 500; max-width: 880px; margin: 0 auto; }
+  .video .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+  .video .note { font-size: 12px; color: var(--text-faint); margin-top: 8px; opacity: 0.7; }
+
+  /* CTA strip */
+  .cta-strip { background: var(--ink-900); color: white; padding: 60px 0; text-align: center; border-radius: 18px; margin: 60px 0; }
+  .cta-strip h2 { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 14px; }
+  .cta-strip h2 .accent { color: var(--honey-400); }
+  .cta-strip p { color: var(--ink-400); margin-bottom: 26px; font-size: 15px; }
+  .cta-strip .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .cta-strip .install { background: var(--ink-800); border: 1px solid var(--ink-700); color: var(--honey-200); padding: 10px 14px; border-radius: 8px; font-family: ui-monospace, monospace; font-size: 13px; }
+
+  /* Footer */
+  footer.site { padding: 40px 0; border-top: 1px solid var(--border-soft); margin-top: 40px; }
+  footer.site .row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+  footer.site .left { color: var(--text-faint); font-size: 13px; }
+  footer.site .ecosystem { display: flex; gap: 16px; font-size: 12.5px; color: var(--text-dim); }
+  footer.site .ecosystem a:hover { color: var(--honey-600); }
+
+  @media (max-width: 720px) {
+    .hero h1 { font-size: 36px; }
+    .hero .lede { font-size: 16px; }
+    section h2.title { font-size: 26px; }
+    .diagram .grid { grid-template-columns: 1fr; }
+    .models { grid-template-columns: repeat(2, 1fr); }
+    nav.site ul { display: none; }
+    .compare table { font-size: 12px; }
+    .compare th, .compare td { padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="site">
+  <div class="container row">
+    <a class="brand" href="#"><span class="dot">h</span> hanimo-rag</a>
+    <ul>
+      <li><a href="#how">동작</a></li>
+      <li><a href="#compare">비교</a></li>
+      <li><a href="#code">설치</a></li>
+      <li><a href="#models">모델</a></li>
+      <li><a href="#video">영상</a></li>
+    </ul>
+    <div class="ctas">
+      <a class="btn ghost" href="https://github.com/flykimjiwon/hanimo-rag" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn primary" href="#install">시작하기</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <span class="badge">⚡ v2.0 — Agentic LiteRAG</span>
+    <h1>Vector DB는 끝났다.<br/><span class="accent">LLM</span>이 답이다.</h1>
+    <p class="lede">
+      <strong>임베딩 모델 0개. 벡터 DB 0개. Docker 없음.</strong>
+      LLM이 직접 인덱싱하고 검색하는 차세대 RAG 엔진. JSON 파일 하나로 시작하세요.
+    </p>
+    <div class="cta-row">
+      <a class="btn primary lg" href="#install">5분 만에 시작</a>
+      <span class="install"><span class="pkg">$</span> pip install hanimo-rag</span>
+    </div>
+  </div>
+</header>
+
+<section class="diagram" id="how">
+  <div class="container">
+    <div class="panel">
+      <h2>전통 RAG vs hanimo-rag</h2>
+      <div class="grid">
+        <div class="col bad">
+          <h3>🐢 전통 Vector RAG</h3>
+          <div class="flow">
+            <div class="step">Document → Chunk</div>
+            <div class="arrow">↓</div>
+            <div class="step">Embedding Model (768d float)</div>
+            <div class="arrow">↓</div>
+            <div class="step">Vector DB (PostgreSQL+pgvector)</div>
+            <div class="arrow">↓ (쿼리 시)</div>
+            <div class="step">Embed Query → ANN Search</div>
+            <div class="arrow">↓</div>
+            <div class="step">Reranker (선택)</div>
+            <div class="arrow">↓</div>
+            <div class="step">LLM</div>
+          </div>
+        </div>
+        <div class="col good">
+          <h3>🍯 hanimo-rag LiteRAG</h3>
+          <div class="flow">
+            <div class="step">Document → Chunk</div>
+            <div class="arrow">↓</div>
+            <div class="step">LLM이 JSON 키 추출 (topics, entities…)</div>
+            <div class="arrow">↓</div>
+            <div class="step">JSON 파일 (사람이 읽고 수정)</div>
+            <div class="arrow">↓ (쿼리 시)</div>
+            <div class="step">LLM Router → 키워드 추출</div>
+            <div class="arrow">↓</div>
+            <div class="step">Key Lookup (O(1)) → LLM Judge</div>
+            <div class="arrow">↓</div>
+            <div class="step">LLM (Answer)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="container">
+    <h2 class="title">왜 vector DB를 <span class="accent">버려야 하는가</span></h2>
+    <p class="kicker">기존 RAG 스택의 복잡성은 대부분 vector infrastructure에서 옵니다. LLM이 충분히 똑똑해진 지금, 그게 정말 필요할까요?</p>
+    <div class="compare">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>전통 Vector RAG</th>
+            <th class="win">hanimo-rag v2 🍯</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="feature">인프라</td><td class="dim">PostgreSQL + pgvector + Docker</td><td class="win">JSON 파일 1개</td></tr>
+          <tr><td class="feature">의존성</td><td class="dim">임베딩 모델 + LLM</td><td class="win">LLM only</td></tr>
+          <tr><td class="feature">인덱스 가독성</td><td class="dim">Opaque float 768차원</td><td class="win">사람이 읽을 수 있는 JSON</td></tr>
+          <tr><td class="feature">디버깅</td><td class="dim">"왜 이게 매칭됐지?" → 알 수 없음</td><td class="win">"matched_topics: [fastapi, cors]"</td></tr>
+          <tr><td class="feature">편집성</td><td class="dim">벡터는 수정 불가</td><td class="win">JSON 열어서 토픽 추가/제거</td></tr>
+          <tr><td class="feature">인덱스 사이즈</td><td class="dim">768-dim float / 청크</td><td class="win">~200 byte JSON / 청크</td></tr>
+          <tr><td class="feature">검색 latency</td><td class="dim">~450ms (embed+search+rerank)</td><td class="win">~350ms (route+lookup+judge)</td></tr>
+          <tr><td class="feature">최소 환경</td><td class="dim">Docker + PostgreSQL</td><td class="win">Python or Node.js</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <h2 class="title">기존 오픈소스와 <span class="accent">비교</span></h2>
+    <p class="kicker">LangChain, LlamaIndex, RAGFlow는 강력하지만 무겁습니다. hanimo-rag는 "LLM이면 충분하다"는 가설에 모든 것을 걸었습니다.</p>
+    <div class="compare">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>LangChain</th>
+            <th>LlamaIndex</th>
+            <th>RAGFlow</th>
+            <th class="win">hanimo-rag</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="feature">설치 단계</td><td class="dim">수십 개 dep</td><td class="dim">수십 개 dep</td><td class="dim">Docker compose</td><td class="win">npm/pip 1줄</td></tr>
+          <tr><td class="feature">Vector DB 필요</td><td class="cross">필수</td><td class="cross">필수</td><td class="cross">필수 (Elasticsearch)</td><td class="check">불필요</td></tr>
+          <tr><td class="feature">임베딩 모델</td><td class="cross">필수</td><td class="cross">필수</td><td class="cross">필수</td><td class="check">불필요</td></tr>
+          <tr><td class="feature">최소 RAM</td><td class="dim">~4GB (embed+LLM)</td><td class="dim">~4GB</td><td class="dim">8GB+</td><td class="win">~2GB (LLM만)</td></tr>
+          <tr><td class="feature">Edge 디바이스</td><td class="cross">어려움</td><td class="cross">어려움</td><td class="cross">불가</td><td class="check">Raspberry Pi OK</td></tr>
+          <tr><td class="feature">JS/Next.js SDK</td><td class="dim">LangChain.js (별도)</td><td class="dim">LlamaIndex.TS</td><td class="cross">없음</td><td class="check">First-class</td></tr>
+          <tr><td class="feature">Index 편집</td><td class="cross">불가</td><td class="cross">불가</td><td class="cross">불가</td><td class="check">vim으로 가능</td></tr>
+          <tr><td class="feature">라이선스</td><td class="dim">MIT</td><td class="dim">MIT</td><td class="dim">Apache 2.0</td><td class="win">Apache 2.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="code">
+  <div class="container">
+    <h2 class="title">5분이면 <span class="accent">충분</span>합니다</h2>
+    <p class="kicker">Python과 Next.js 양쪽 생태계 모두 first-class 지원. 같은 API, 같은 컨셉.</p>
+    <div class="codetabs" id="install">
+      <div class="tabs">
+        <button class="active" data-tab="py">Python</button>
+        <button data-tab="ts">TypeScript / Next.js</button>
+        <button data-tab="cli">CLI</button>
+      </div>
+      <div class="panel active" data-panel="py">
+        <div class="lang">pip install hanimo-rag</div>
+<pre><code>from hanimo_rag import HanimoRAG
+
+rag = HanimoRAG("qwen2.5:7b")
+
+# 인덱싱 (밤새 돌려도 OK, 배치 친화적)
+await rag.index("./docs")
+
+# 검색 (실시간, ~350ms)
+results = await rag.search("CORS 미들웨어 추가하는 법?")
+
+# RAG 답변
+answer = await rag.ask("기본 chunk 사이즈는?")</code></pre>
+      </div>
+      <div class="panel" data-panel="ts">
+        <div class="lang">npm install hanimo-rag</div>
+<pre><code>import { HanimoRAG } from 'hanimo-rag'
+
+const rag = new HanimoRAG({ model: 'qwen2.5:7b' })
+
+await rag.index('./docs')
+const results = await rag.search('CORS middleware setup')
+const answer  = await rag.ask('What is the default chunk size?')</code></pre>
+      </div>
+      <div class="panel" data-panel="cli">
+        <div class="lang">brew install / npm i -g</div>
+<pre><code>hanimo-rag index ./my-docs --model qwen2.5:7b
+hanimo-rag search "CORS middleware setup"
+hanimo-rag ask "How do I configure logging?"
+hanimo-rag status</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="models">
+  <div class="container">
+    <h2 class="title">어떤 LLM이든 <span class="accent">잘 돕니다</span></h2>
+    <p class="kicker">Ollama 로컬, OpenAI-호환 API, llama.cpp — 어디든. 저사양 모델로도 충분합니다.</p>
+    <div class="models">
+      <div class="model featured">
+        <div class="name">Qwen2.5-7B</div>
+        <div class="meta">7B · 5GB VRAM</div>
+        <div class="use">JSON 출력 최강. 인덱싱 default 추천.</div>
+      </div>
+      <div class="model">
+        <div class="name">Phi-3.5-mini</div>
+        <div class="meta">3.8B · 2.5GB</div>
+        <div class="use">Routing/Judging 빠름. 쿼리 latency 최소화.</div>
+      </div>
+      <div class="model">
+        <div class="name">Gemma 2 9B</div>
+        <div class="meta">9B · 6GB</div>
+        <div class="use">복잡 쿼리 추론. 한국어도 안정적.</div>
+      </div>
+      <div class="model">
+        <div class="name">Llama 3.1 8B</div>
+        <div class="meta">8B · 5GB</div>
+        <div class="use">올라운더. 영어/다국어 균형.</div>
+      </div>
+      <div class="model">
+        <div class="name">Qwen2.5-3B</div>
+        <div class="meta">3B · 2GB</div>
+        <div class="use">Edge / Raspberry Pi 5 / 노트북.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="video">
+  <div class="container">
+    <h2 class="title">기존 RAG와 <span class="accent">실측 비교</span></h2>
+    <p class="kicker">설치 시간, 인덱싱 속도, 검색 정확도 — LangChain · RAGFlow vs hanimo-rag 라이브 데모.</p>
+    <div class="video">
+      <div style="text-align: center;">
+        <div class="icon">▶</div>
+        <div>비교 데모 영상 (준비 중)</div>
+        <div class="note">YouTube 임베드 자리</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="cta-strip">
+      <h2>지금 바로 <span class="accent">시작</span>하세요</h2>
+      <p>JSON 파일 하나로 RAG가 됩니다. Vector DB는 잊으세요.</p>
+      <div class="row">
+        <span class="install">pip install hanimo-rag</span>
+        <span class="install">npm install hanimo-rag</span>
+        <a class="btn primary" href="https://github.com/flykimjiwon/hanimo-rag" target="_blank" rel="noopener">⭐ GitHub</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site">
+  <div class="container row">
+    <div class="left">
+      © 2026 hanimo · Apache 2.0 · Made by <a href="https://github.com/flykimjiwon" style="color:var(--honey-600);">@flykimjiwon</a>
+    </div>
+    <div class="ecosystem">
+      <a href="https://github.com/flykimjiwon/hanimo-code">hanimo-code</a>
+      <a href="https://github.com/flykimjiwon/hanimo-webui">hanimo-webui</a>
+      <a href="https://github.com/flykimjiwon/hanimo-rag" style="color:var(--honey-700); font-weight:600;">hanimo-rag</a>
+      <a href="https://github.com/flykimjiwon/hanimo-community">hanimo-community</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Tab switcher
+  document.querySelectorAll('.codetabs').forEach(box => {
+    const tabs = box.querySelectorAll('.tabs button');
+    const panels = box.querySelectorAll('.panel');
+    tabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const k = btn.dataset.tab;
+        tabs.forEach(b => b.classList.toggle('active', b === btn));
+        panels.forEach(p => p.classList.toggle('active', p.dataset.panel === k));
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
