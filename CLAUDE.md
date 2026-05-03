@@ -1,187 +1,168 @@
-# hanimo-rag - Project Guide
+# hanimo-rag — Project Guide
 
 ## Overview
 
-hanimo-rag is a **PostgreSQL-native hybrid RAG engine** — vector search, full-text search, and knowledge graph all run inside a single PostgreSQL instance. No Elasticsearch, no Pinecone, no Neo4j.
+hanimo-rag is **Agentic LiteRAG** — an LLM-native retrieval engine with **zero vector infrastructure**. No vector DB. No embeddings. No Docker. JSON file is all you need.
 
-- **Version**: 0.1.0 (Alpha)
-- **License**: MIT
-- **Python**: 3.11+
-- **Framework**: FastAPI + asyncpg + pgvector
+- **Version**: 2.0.0 (released 2026-05-03)
+- **License**: Apache 2.0
+- **Python**: 3.10+
+- **Node**: 18+
+- **Stack**: Python (`pip install hanimo-rag`) + JS/TS (`npm install hanimo-rag`) — first-class dual SDK
+
+> v1 (PostgreSQL + pgvector hybrid RAG) is permanently archived in branch `archive/v1-postgres-hybrid-rag`. Do not propose vector DB / embedding model additions — that violates v2 design philosophy.
+
+## How LiteRAG Works
+
+```
+INDEX:  Document → Chunk → LLM extracts JSON keys → JSON store
+                  keys: { topics[], entities[], questions[], category, summary }
+
+SEARCH: Query → LLM Router (extract keywords + category)
+              → Key lookup O(1) in store
+              → LLM Judge (relevance 0-1)
+              → If insufficient: LLM refines keywords, retry (max 3 rounds)
+```
+
+Latency ~350ms. Index size ~200B JSON per chunk (vs 768d float vectors).
 
 ## Architecture
 
 ```
 hanimo-rag/
-├── __init__.py          # hanimo-rag facade class (sync/async Python SDK)
-├── main.py              # FastAPI app creation, router registration
-├── cli.py               # CLI: serve, init-db, ingest, search, ask, quickstart, status
-├── config.py            # Pydantic settings (HANIMO_RAG_* env vars)
+├── hanimo_rag/             # Python package (pip install hanimo-rag)
+│   ├── __init__.py         # exports HanimoRAG class
+│   ├── core/               # indexer, router, judge, agent, chunker
+│   ├── llm/                # base, ollama, openai_compat
+│   ├── store/              # base, json_store, sqlite_store
+│   ├── parsers/            # base, markdown, pdf, text
+│   ├── server.py           # optional FastAPI server
+│   ├── cli.py              # `hanimo-rag` CLI
+│   ├── config.py           # Config dataclass
+│   └── types.py            # shared types
 │
-├── api/                 # FastAPI route handlers
-│   ├── admin.py         # GET /health, GET/PUT /api/settings
-│   ├── auth.py          # X-API-Key middleware
-│   ├── ingest.py        # POST /api/ingest, CRUD /api/documents
-│   ├── search.py        # POST /api/search (hybrid/vector/fts/graph)
-│   ├── generate.py      # POST /api/generate (RAG with streaming SSE)
-│   ├── collections.py   # CRUD /api/collections + document assignment
-│   ├── graph.py         # GET /api/graph, GET /api/graph/node/{id}
-│   ├── apps.py          # CRUD /api/apps + POST /api/apps/{id}/chat
-│   └── middleware.py    # CORS, logging
+├── js/                     # npm package (npm install hanimo-rag)
+│   └── src/                # mirror of Python: core, llm, store, parsers, server, cli
+│       ├── hanimo-rag.ts   # HanimoRAG class
+│       ├── index.ts        # main export
+│       └── types.ts
 │
-├── core/                # RAG engine algorithms
-│   ├── pipeline.py      # Ingestion: parse → chunk → embed → store → extract → graph
-│   ├── chunker.py       # RecursiveChunker (+ PageChunker, SemanticChunker)
-│   ├── embedder.py      # OllamaEmbedder, OpenAIEmbedder (ABC)
-│   ├── extractor.py     # LLM-based entity/relationship extraction
-│   ├── hybrid_search.py # RRF fusion: vector + FTS + graph (k=60, weights 0.5/0.3/0.2)
-│   ├── vector_store.py  # pgvector HNSW operations
-│   ├── fts.py           # PostgreSQL tsvector BM25-like ranking
-│   ├── graph_store.py   # Knowledge graph node/edge queries, 2-hop BFS
-│   ├── hyde.py          # HyDE (Hypothetical Document Embeddings)
-│   └── llm.py           # OllamaLLM, OpenAILLM adapters
+├── tests/                  # pytest (Python) — 27 tests: chunker(11) + store(16)
+├── js/tests/               # vitest (JS) — 23 tests: chunker + store
 │
-├── db/
-│   ├── connection.py    # asyncpg pool, init_schema(), fetch/execute helpers
-│   └── schema.sql       # Full PostgreSQL schema (9 tables, pgvector + pg_trgm + ltree)
+├── dashboard/              # React 19 + Vite + Tailwind v4 SPA (clood디자인 jsx 기준)
+│   ├── src/
+│   │   ├── App.tsx, main.tsx, theme.ts, i18n.tsx, lib.tsx, chrome.tsx, api.ts
+│   │   └── pages/{guide,apps,app-detail,documents,collections,playground,settings}.tsx
+│   └── index.html
 │
-├── parsers/             # Document format parsers (ABC pattern)
-│   ├── pdf.py, docx.py, xlsx.py, pptx.py, markdown.py, text.py
-│   └── base.py          # ParserBase abstract class
-│
-└── static/              # Built React dashboard (mounted at /dashboard)
-
-dashboard/               # React 19 + TypeScript + Vite + Tailwind CSS (SPA)
-tests/                   # pytest + pytest-asyncio (177 tests across 5 modules)
+├── docs/                   # ARCHITECTURE.md, SCHEMA.md, DESIGN_ANALYSIS.md, design-01~05.html, landing.html
+├── hanimo_rag_클로드디자인/  # Original jsx design assets (reference)
+└── pyproject.toml, README.md, LICENSE (Apache 2.0), CLAUDE.md, .gitignore
 ```
 
-## Database Schema (PostgreSQL)
+## Recommended Models
 
-9 tables, all prefixed `hanimo-rag_`:
-
-| Table | Purpose |
-|-------|---------|
-| `documents` | Document metadata, processing status |
-| `document_chunks` | Text chunks + embeddings (halfvec(768)) + FTS (tsvector GENERATED) |
-| `graph_nodes` | Knowledge graph entities (person/org/concept/location/event) |
-| `graph_edges` | Relationships between nodes |
-| `communities` | Hierarchical graph clustering (ltree) |
-| `settings` | System-wide RAG configuration |
-| `collections` | Named document groupings |
-| `collection_documents` | Junction table: documents ↔ collections |
-| `apps` | Custom LLM endpoint configurations |
-
-Key indexes: HNSW on embeddings (cosine), GIN on tsvector, GIST on ltree paths.
-
-Extensions: `vector`, `pg_trgm`, `ltree`
-
-## API Endpoints (25+)
-
-All under `/api` prefix, auth via `X-API-Key` header (disabled when `HANIMO_RAG_API_KEYS` is empty).
-
-| Group | Endpoints |
-|-------|-----------|
-| **Admin** | `GET /health`, `GET/PUT /api/settings` |
-| **Documents** | `POST /api/ingest`, `GET /api/documents`, `GET/DELETE /api/documents/{id}` |
-| **Search** | `POST /api/search` (modes: hybrid, vector, fts, graph) |
-| **Generate** | `POST /api/generate` (RAG with SSE streaming) |
-| **Collections** | CRUD + `POST/DELETE /api/collections/{id}/documents` |
-| **Graph** | `GET /api/graph`, `GET /api/graph/node/{id}` |
-| **Apps** | CRUD + `POST /api/apps/{id}/chat` |
-
-Interactive docs: `/docs` (Swagger), `/redoc` (ReDoc)
+| Model | Params | VRAM | Best For |
+|-------|--------|------|----------|
+| **Qwen2.5-7B** | 7B | 5GB | Indexing (best JSON output) — current default |
+| Phi-3.5-mini | 3.8B | 2.5GB | Routing/Judging (fast queries) |
+| Gemma 2 9B | 9B | 6GB | Complex queries / Korean |
+| Llama 3.1 8B | 8B | 5GB | All-rounder |
+| Qwen2.5-3B | 3B | 2GB | Edge / Raspberry Pi |
 
 ## Development
-
-### Prerequisites
-
-- Python 3.11+, Docker, Ollama (with `nomic-embed-text` model)
 
 ### Quick Setup
 
 ```bash
-# Clone and install
-pip install -e ".[dev]"
+# Python
+python3 -m venv .venv
+.venv/bin/pip install -e ".[dev]"
 
-# Start infrastructure
-docker compose up -d db          # PostgreSQL only
-ollama serve                     # If not running
-ollama pull nomic-embed-text
+# JS
+cd js && npm install && npm run build && cd ..
 
-# Initialize DB and start server
-hanimo-rag init-db --db postgresql://hanimo-rag:hanimo-rag@localhost:5439/hanimo-rag
-hanimo-rag serve --port 8009 --reload --db postgresql://hanimo-rag:hanimo-rag@localhost:5439/hanimo-rag
+# Dashboard
+cd dashboard && npm install && npm run build && cd ..
+
+# Run (Python server, optional)
+.venv/bin/hanimo-rag serve --port 3737
 ```
 
-Or use the all-in-one script: `./start.sh`
+Requires Ollama (or any OpenAI-compatible LLM endpoint). No PostgreSQL, no Docker required.
 
-### Running Tests
+### Tests
 
 ```bash
-pytest                           # 177 tests (all unit, no DB required)
-pytest tests/test_chunker.py     # Chunker tests only
-pytest -x -v                     # Stop on first failure, verbose
+.venv/bin/pytest tests/                  # Python — 27 tests
+cd js && npx vitest run && cd ..         # JS — 23 tests
+cd dashboard && npm run build && cd ..   # Dashboard build verify
 ```
 
-### Linting
+### Lint
 
 ```bash
-ruff check hanimo-rag/             # Lint check
-ruff format hanimo-rag/            # Auto-format
+.venv/bin/ruff check hanimo_rag/
+.venv/bin/ruff format hanimo_rag/
 ```
 
-### Docker (Full Stack)
+### CLI Examples
 
 ```bash
-docker compose up --build        # Build + start (PostgreSQL + hanimo-rag)
-docker compose down              # Stop
-docker compose logs -f hanimo-rag  # Tail logs
+hanimo-rag index ./docs --model qwen2.5:7b
+hanimo-rag search "CORS middleware setup"
+hanimo-rag ask "How do I configure logging?"
+hanimo-rag status
+hanimo-rag delete ./docs/old.md
+hanimo-rag serve --port 3737
 ```
 
-### Ports
-
-| Service | Port |
-|---------|------|
-| hanimo-rag API + Dashboard | 8009 |
-| PostgreSQL | 5439 |
-| Ollama | 11434 (host) |
-
-### Key Environment Variables
+### Environment Variables
 
 ```bash
-HANIMO_RAG_POSTGRES_URI=postgresql://hanimo-rag:hanimo-rag@localhost:5439/hanimo-rag
-HANIMO_RAG_EMBEDDING_PROVIDER=ollama        # ollama | openai | local
-HANIMO_RAG_EMBEDDING_MODEL=nomic-embed-text
-HANIMO_RAG_EMBEDDING_DIMENSIONS=768
-HANIMO_RAG_OLLAMA_BASE_URL=http://localhost:11434
-HANIMO_RAG_LLM_PROVIDER=ollama              # ollama | openai
-HANIMO_RAG_LLM_MODEL=llama3
-HANIMO_RAG_CHUNK_SIZE=512
-HANIMO_RAG_CHUNK_OVERLAP=51
-HANIMO_RAG_SIMILARITY_TOP_K=5
-HANIMO_RAG_SIMILARITY_THRESHOLD=0.7
-HANIMO_RAG_API_KEYS=                        # empty = no auth
+OPENAI_API_KEY=...                       # OpenAI / OpenAI-compatible endpoints
+OLLAMA_BASE_URL=http://localhost:11434   # Ollama base URL (default)
+VITE_API_BASE=http://localhost:3737      # dashboard → backend (build time)
 ```
+
+## API (when running `hanimo-rag serve`)
+
+FastAPI server (`hanimo_rag/server.py`) and JS Express equivalent (`js/src/server.ts`):
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/ingest` | Index a document/folder |
+| `GET/DELETE /api/documents/...` | Document CRUD |
+| `POST /api/search` | Keyword routing + judge search |
+| `POST /api/generate` | RAG answer (search + LLM) |
+| `GET/PUT /api/settings` | Config |
+| `GET /health` | Health |
+| CRUD `/api/collections`, `/api/apps` | Collection / App builder support |
+
+Dashboard (`dashboard/`) consumes these via `dashboard/src/api.ts`.
 
 ## Conventions
 
-- All DB tables prefixed with `hanimo-rag_`
-- Embeddings stored as `halfvec(768)` — change dimension in schema.sql if using different model
-- Async-first: all DB operations use asyncpg, all HTTP calls use httpx
-- Parsers follow ABC pattern (ParserBase) with lazy imports for heavy deps
-- Config via pydantic-settings with `HANIMO_RAG_` prefix env vars
-- RRF fusion weights: vector=0.5, FTS=0.3, graph=0.2 (k=60)
+- **Dual SDK rule**: any change to Python core must have JS equivalent (and vice versa). They are mirrors.
+- **No vector / embedding additions** — violates v2 design (see commit `8f91aaf`)
+- **License**: Apache 2.0. All deps must be MIT/BSD/Apache compatible.
+- **Branding**: Honey amber (`#F59E0B` / `#FBBF24` / `#FCD34D`). No external CDN fonts/scripts (commit `e0ce6b6` policy).
+- **Folder names with non-ASCII (`hanimo_rag_클로드디자인/`)** are intentional design source folders — keep as-is.
 
-## Testing
+## Project History (key commits)
 
-- Test framework: pytest + pytest-asyncio (asyncio_mode = "auto")
-- 5 test modules: chunker, extractor, hybrid_search, api, parsers
-- All tests are unit tests — no DB or external service required
-- Tests mock external calls (embedding API, LLM, DB)
+- `5594fa2` — dashboard 폰트 self-host + MOCK→실 v2 API 연결
+- `48eacea` — dashboard 클로드디자인 jsx → production-ready TSX
+- `3ced4da` — `docs/landing.html` (기존 RAG 비교 마케팅 페이지)
+- `8f91aaf` — **v2 LiteRAG 피봇 (BREAKING)** — vector DB 통째 폐기
+- `7d538ff` — 디자인 자산 commit + .omc gitignore
+- `archive/v1-postgres-hybrid-rag` — v1 (pgvector hybrid RAG) 영구 보존
+- Tag `v2.0.0` — release marker
 
-## Known Limitations
+## Known TODOs
 
-- `python-multipart` is listed as a dependency but may be unused directly (FastAPI uses it internally for file uploads)
-- `setup.py` is minimal and redundant with pyproject.toml (kept for backward compatibility)
-- No Alembic migrations — schema changes are done via schema.sql re-init
-- No CI/CD pipeline configured yet
+- Dashboard: 실 백엔드 응답 shape 통합 검증 (DocumentsPage/CollectionsPage onDelete 사용)
+- landing.html: YouTube 비교 데모 영상 embed 자리 비워둠
+- Korean README 별도 (`README.ko.md`) — 영문 README는 v2 컨셉만 담음
+- gemma2:2b/9b 한국어 인덱싱 품질 실측 후 default 검토

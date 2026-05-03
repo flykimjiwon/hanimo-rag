@@ -4,15 +4,15 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: '/dashboard/',
+  base: './',
   build: {
-    outDir: '../hanimo-rag/static',
+    outDir: 'dist',
     emptyOutDir: true,
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:8000',
-      '/health': 'http://localhost:8000',
+      '/api': 'http://localhost:3737',
+      '/health': 'http://localhost:3737',
     },
   },
 })
