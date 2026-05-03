@@ -1,6 +1,12 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/flykimjiwon/hanimo-code/main/docs/branding/assets/hanimo-logo-horizontal.svg" alt="hanimo — Modol the Honey-Bee Bichon" width="420">
+</p>
+
 # hanimo-rag
 
 **PostgreSQL-native Hybrid RAG Engine**
+
+_PostgreSQL 단독으로 동작하는 경량 하이브리드 RAG 엔진 — Elasticsearch · 별도 벡터 DB · 그래프 DB 없음._
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-f5a623.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-f5a623.svg)](https://www.python.org/downloads/)
