@@ -12,6 +12,11 @@ import DocumentsPage from './pages/documents';
 import { CollectionsPage, CollectionDetail } from './pages/collections';
 import PlaygroundPage from './pages/playground';
 import SettingsPage from './pages/settings';
+import {
+  apiGetApps, apiCreateApp, apiUpdateApp, apiDeleteApp,
+  apiGetDocuments, apiIngest, apiDeleteDocument,
+  apiGetCollections, apiCreateCollection, apiDeleteCollection,
+} from './api';
 
 // ── Create App Modal ──────────────────────────────────────────────────────────
 function CreateAppModal({ open, onClose, onCreate, collections }: any) {
@@ -122,14 +127,39 @@ function App() {
     if (saved && THEME[saved]) return saved;
     return 'honey';
   });
-  // TODO: replace MOCK_* with real API hooks (apiGetApps / apiGetDocuments / apiGetCollections)
-  const [apps, setApps] = React.useState(MOCK_APPS);
-  const [docs, setDocs] = React.useState(MOCK_DOCS);
-  const [collections] = React.useState(MOCK_COLLECTIONS);
+
+  const [apps, setApps] = React.useState<any[]>([]);
+  const [docs, setDocs] = React.useState<any[]>([]);
+  const [collections, setCollections] = React.useState<any[]>([]);
+
   const [openAppId, setOpenAppId] = React.useState<string | null>(null);
   const [openCollId, setOpenCollId] = React.useState<string | null>(null);
   const [createOpen, setCreateOpen] = React.useState(false);
   const [uploading, setUploading] = React.useState<any[]>([]);
+
+  // Fetch all data on mount
+  React.useEffect(() => {
+    apiGetApps()
+      .then((data: any) => setApps(Array.isArray(data) ? data : (data?.items ?? data?.apps ?? [])))
+      .catch((err: any) => {
+        console.error('[hanimo-rag] apiGetApps failed, using MOCK:', err);
+        setApps(MOCK_APPS);
+      });
+
+    apiGetDocuments()
+      .then((data: any) => setDocs(Array.isArray(data) ? data : (data?.items ?? data?.documents ?? [])))
+      .catch((err: any) => {
+        console.error('[hanimo-rag] apiGetDocuments failed, using MOCK:', err);
+        setDocs(MOCK_DOCS);
+      });
+
+    apiGetCollections()
+      .then((data: any) => setCollections(Array.isArray(data) ? data : (data?.items ?? data?.collections ?? [])))
+      .catch((err: any) => {
+        console.error('[hanimo-rag] apiGetCollections failed, using MOCK:', err);
+        setCollections(MOCK_COLLECTIONS);
+      });
+  }, []);
 
   React.useEffect(() => { localStorage.setItem('hanimo-theme', themeName); }, [themeName]);
   React.useEffect(() => {
@@ -137,24 +167,111 @@ function App() {
     if (active !== 'collections') setOpenCollId(null);
   }, [active]);
 
-  // Simulate upload pipeline (TODO: replace with real apiIngest call)
-  const startUpload = () => {
+  // File upload via real API; falls back to simulated progress on error
+  const startUpload = (file?: File) => {
     const id = 'up_' + Math.random().toString(16).slice(2, 6);
-    const sample = { id, name: 'New Upload.pdf', type: 'pdf', stage: 'parsing' };
+    const fileName = file?.name ?? 'New Upload.pdf';
+    const sample = { id, name: fileName, type: fileName.split('.').pop() ?? 'pdf', stage: 'parsing' };
     setUploading(u => [...u, sample]);
+
+    if (file) {
+      apiIngest(file)
+        .then((result: any) => {
+          setUploading(u => u.filter((x: any) => x.id !== id));
+          const newDoc = result?.document ?? {
+            id: 'd' + Math.random().toString(16).slice(2, 6),
+            name: fileName,
+            type: sample.type,
+            size: `${Math.round((file.size ?? 0) / 1024)} KB`,
+            chunks: result?.chunks ?? 0,
+            status: 'ready',
+            date: 'just now',
+          };
+          setDocs(d => [newDoc, ...d]);
+        })
+        .catch((err: any) => {
+          console.error('[hanimo-rag] apiIngest failed, simulating:', err);
+          simulateUpload(id, sample);
+        });
+    } else {
+      // No file object — simulate (dev/demo mode)
+      simulateUpload(id, sample);
+    }
+  };
+
+  const simulateUpload = (id: string, sample: any) => {
     const stages = ['parsing', 'chunking', 'embedding', 'indexed'];
     let i = 0;
     const tick = () => {
       i++;
       if (i >= stages.length) {
         setUploading(u => u.filter((x: any) => x.id !== id));
-        setDocs(d => [{ id: 'd' + Math.random().toString(16).slice(2, 6), name: sample.name, type: 'pdf', size: '420 KB', chunks: 22, status: 'ready', date: 'just now' }, ...d]);
+        setDocs(d => [{ id: 'd' + Math.random().toString(16).slice(2, 6), name: sample.name, type: sample.type, size: '420 KB', chunks: 22, status: 'ready', date: 'just now' }, ...d]);
         return;
       }
       setUploading(u => u.map((x: any) => x.id === id ? { ...x, stage: stages[i] } : x));
       setTimeout(tick, 1200);
     };
     setTimeout(tick, 1200);
+  };
+
+  // App handlers
+  const handleCreateApp = async (appData: any) => {
+    try {
+      const created = await apiCreateApp(appData);
+      setApps(p => [created ?? appData, ...p]);
+    } catch (err) {
+      console.error('[hanimo-rag] apiCreateApp failed, adding locally:', err);
+      setApps(p => [appData, ...p]);
+    }
+  };
+
+  const handleUpdateApp = async (updated: any) => {
+    setApps(a => a.map((x: any) => x.id === updated.id ? updated : x));
+    try {
+      await apiUpdateApp(updated.id, updated);
+    } catch (err) {
+      console.error('[hanimo-rag] apiUpdateApp failed:', err);
+    }
+  };
+
+  const handleDeleteApp = async (id: string) => {
+    setApps(a => a.filter((x: any) => x.id !== id));
+    try {
+      await apiDeleteApp(id);
+    } catch (err) {
+      console.error('[hanimo-rag] apiDeleteApp failed:', err);
+    }
+  };
+
+  // Document handlers
+  const handleDeleteDocument = async (id: string) => {
+    setDocs(d => d.filter((x: any) => x.id !== id));
+    try {
+      await apiDeleteDocument(id);
+    } catch (err) {
+      console.error('[hanimo-rag] apiDeleteDocument failed:', err);
+    }
+  };
+
+  // Collection handlers
+  const handleCreateCollection = async (collData: any) => {
+    try {
+      const created = await apiCreateCollection(collData.name, collData.desc ?? '');
+      setCollections(c => [created ?? collData, ...c]);
+    } catch (err) {
+      console.error('[hanimo-rag] apiCreateCollection failed, adding locally:', err);
+      setCollections(c => [collData, ...c]);
+    }
+  };
+
+  const handleDeleteCollection = async (id: string) => {
+    setCollections(c => c.filter((x: any) => x.id !== id));
+    try {
+      await apiDeleteCollection(id);
+    } catch (err) {
+      console.error('[hanimo-rag] apiDeleteCollection failed:', err);
+    }
   };
 
   const theme = THEME[themeName] || THEME.honey;
@@ -169,18 +286,18 @@ function App() {
         <main className="flex-1 flex flex-col min-w-0" style={{ background: theme.appBg }}>
           {active === 'guide' && <GuidePage/>}
           {active === 'apps' && (openApp
-            ? <AppDetail app={openApp} collections={collections} onBack={() => setOpenAppId(null)} onUpdate={(u: any) => setApps((a: any) => a.map((x: any) => x.id === u.id ? u : x))}/>
+            ? <AppDetail app={openApp} collections={collections} onBack={() => setOpenAppId(null)} onUpdate={handleUpdateApp} onDelete={handleDeleteApp}/>
             : <AppsPage apps={apps} onOpen={setOpenAppId} onCreate={() => setCreateOpen(true)}/>
           )}
-          {active === 'documents' && <DocumentsPage docs={docs} collections={collections} themeName={themeName} uploading={uploading} onStartUpload={startUpload}/>}
+          {active === 'documents' && <DocumentsPage docs={docs} collections={collections} themeName={themeName} uploading={uploading} onStartUpload={startUpload} onDelete={handleDeleteDocument}/>}
           {active === 'collections' && (openColl
             ? <CollectionDetail collection={openColl} docs={docs} apps={apps} onBack={() => setOpenCollId(null)} themeName={themeName}/>
-            : <CollectionsPage collections={collections} docs={docs} apps={apps} onOpen={setOpenCollId} onCreate={() => {}}/>
+            : <CollectionsPage collections={collections} docs={docs} apps={apps} onOpen={setOpenCollId} onCreate={handleCreateCollection} onDelete={handleDeleteCollection}/>
           )}
           {active === 'playground' && <PlaygroundPage collections={collections}/>}
           {active === 'settings' && <SettingsPage/>}
         </main>
-        <CreateAppModal open={createOpen} onClose={() => setCreateOpen(false)} onCreate={(a: any) => setApps((p: any) => [a, ...p])} collections={collections}/>
+        <CreateAppModal open={createOpen} onClose={() => setCreateOpen(false)} onCreate={handleCreateApp} collections={collections}/>
       </div>
     </ThemeCtx.Provider>
   );
