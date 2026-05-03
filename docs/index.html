@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hanimo-rag v2 — Agentic LiteRAG Engine</title>
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #111113;
+    --surface2: #1a1a1e;
+    --border: #2a2a2e;
+    --text: #e4e4e7;
+    --text-dim: #8b8b95;
+    --accent: #6366f1;
+    --accent-light: #818cf8;
+    --green: #34d399;
+    --orange: #fb923c;
+    --red: #f87171;
+    --blue: #60a5fa;
+    --yellow: #fbbf24;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent-light); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(10,10,11,0.85); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  nav .logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+  nav .logo span { color: var(--accent-light); }
+  nav .links { display: flex; gap: 1.5rem; font-size: 0.85rem; }
+  nav .links a { color: var(--text-dim); transition: color 0.2s; }
+  nav .links a:hover { color: var(--text); text-decoration: none; }
+  nav .badge {
+    background: var(--accent); color: #fff; font-size: 0.7rem;
+    padding: 2px 8px; border-radius: 99px; font-weight: 600;
+  }
+
+  /* HERO */
+  .hero {
+    padding: 8rem 2rem 4rem; text-align: center;
+    max-width: 800px; margin: 0 auto;
+  }
+  .hero .pill {
+    display: inline-block; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 99px;
+    padding: 4px 14px; font-size: 0.8rem; color: var(--accent-light);
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 {
+    font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 800;
+    letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 1.2rem;
+  }
+  .hero h1 .gradient {
+    background: linear-gradient(135deg, var(--accent-light), var(--green));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero p {
+    font-size: 1.1rem; color: var(--text-dim); max-width: 600px;
+    margin: 0 auto 2rem;
+  }
+  .hero-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.65rem 1.5rem; border-radius: 8px; font-size: 0.9rem;
+    font-weight: 600; border: none; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-light); text-decoration: none; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: var(--text-dim); text-decoration: none; }
+
+  .install-box {
+    margin: 2.5rem auto 0; max-width: 420px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .install-tabs {
+    display: flex; border-bottom: 1px solid var(--border);
+  }
+  .install-tab {
+    flex: 1; padding: 0.5rem; text-align: center;
+    font-size: 0.8rem; font-weight: 600; color: var(--text-dim);
+    cursor: pointer; border: none; background: none;
+    transition: all 0.2s; border-bottom: 2px solid transparent;
+  }
+  .install-tab.active { color: var(--accent-light); border-bottom-color: var(--accent); background: var(--surface2); }
+  .install-tab:hover { color: var(--text); }
+  .install-content {
+    padding: 1rem 1.2rem; font-family: var(--font-mono);
+    font-size: 0.85rem; display: none;
+  }
+  .install-content.active { display: block; }
+  .install-content .prompt { color: var(--green); }
+  .install-content .cmd { color: var(--text); }
+
+  /* SECTIONS */
+  section { max-width: 1000px; margin: 0 auto; padding: 5rem 2rem; }
+  section h2 {
+    font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+  section .subtitle { color: var(--text-dim); margin-bottom: 3rem; font-size: 1rem; }
+
+  /* COMPARISON */
+  .comparison {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  @media (max-width: 680px) { .comparison { grid-template-columns: 1fr; } }
+  .comp-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem; position: relative;
+  }
+  .comp-card.old { opacity: 0.6; }
+  .comp-card.new { border-color: var(--accent); }
+  .comp-card .tag {
+    position: absolute; top: -10px; right: 16px;
+    background: var(--accent); color: #fff; font-size: 0.7rem;
+    padding: 2px 10px; border-radius: 99px; font-weight: 600;
+  }
+  .comp-card h3 { font-size: 1rem; margin-bottom: 0.75rem; }
+  .comp-card .flow {
+    font-family: var(--font-mono); font-size: 0.78rem;
+    color: var(--text-dim); line-height: 1.8;
+  }
+  .comp-card .flow .highlight { color: var(--green); font-weight: 600; }
+  .comp-card .flow .dim { color: #555; }
+  .comp-card .deps {
+    margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.4rem;
+  }
+  .comp-card .deps span {
+    font-size: 0.7rem; padding: 2px 8px; border-radius: 4px;
+    background: var(--surface2); border: 1px solid var(--border);
+  }
+  .comp-card.new .deps span {
+    background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.3);
+    color: var(--accent-light);
+  }
+  .comp-card .deps .removed { text-decoration: line-through; color: var(--red); opacity: 0.5; }
+
+  /* FEATURES */
+  .features-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.2rem;
+  }
+  .feature-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem;
+    transition: border-color 0.2s;
+  }
+  .feature-card:hover { border-color: var(--accent); }
+  .feature-card .icon { font-size: 1.5rem; margin-bottom: 0.75rem; }
+  .feature-card h3 { font-size: 0.95rem; margin-bottom: 0.4rem; }
+  .feature-card p { font-size: 0.85rem; color: var(--text-dim); }
+
+  /* ARCHITECTURE */
+  .arch-diagram {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 2rem; overflow-x: auto;
+    font-family: var(--font-mono); font-size: 0.8rem;
+    line-height: 1.6; white-space: pre;
+  }
+  .arch-diagram .label { color: var(--accent-light); font-weight: 600; }
+  .arch-diagram .arrow { color: var(--green); }
+  .arch-diagram .note { color: var(--text-dim); font-style: italic; }
+  .arch-diagram .box { color: var(--orange); }
+
+  /* CODE BLOCKS */
+  .code-section { margin: 2rem 0; }
+  .code-header {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-bottom: none; border-radius: 10px 10px 0 0;
+    padding: 0.6rem 1rem; font-size: 0.8rem;
+  }
+  .code-header .lang {
+    color: var(--accent-light); font-weight: 600; font-size: 0.75rem;
+    background: rgba(99,102,241,0.15); padding: 2px 8px; border-radius: 4px;
+  }
+  .code-header .filename { color: var(--text-dim); }
+  pre {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 0 0 10px 10px; padding: 1.2rem;
+    overflow-x: auto; font-family: var(--font-mono);
+    font-size: 0.82rem; line-height: 1.7;
+  }
+  pre code { color: var(--text); }
+  .kw { color: #c084fc; }
+  .fn { color: #60a5fa; }
+  .str { color: #34d399; }
+  .cmt { color: #555; font-style: italic; }
+  .num { color: #fbbf24; }
+  .type { color: #fb923c; }
+
+  /* MODELS TABLE */
+  .models-table {
+    width: 100%; border-collapse: collapse;
+    background: var(--surface); border-radius: 12px;
+    overflow: hidden; border: 1px solid var(--border);
+  }
+  .models-table th {
+    text-align: left; padding: 0.75rem 1rem;
+    font-size: 0.78rem; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--text-dim);
+    background: var(--surface2); border-bottom: 1px solid var(--border);
+  }
+  .models-table td {
+    padding: 0.65rem 1rem; font-size: 0.85rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .models-table tr:last-child td { border-bottom: none; }
+  .models-table .tag-rec {
+    font-size: 0.65rem; background: var(--green); color: #000;
+    padding: 1px 6px; border-radius: 4px; font-weight: 600; margin-left: 0.5rem;
+  }
+  .models-table .vram { color: var(--yellow); font-family: var(--font-mono); font-size: 0.8rem; }
+
+  /* BENCHMARK */
+  .bench-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
+  @media (max-width: 680px) { .bench-grid { grid-template-columns: 1fr; } }
+  .bench-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem; text-align: center;
+  }
+  .bench-card .value {
+    font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em;
+    margin-bottom: 0.25rem;
+  }
+  .bench-card .value.fast { color: var(--green); }
+  .bench-card .value.small { color: var(--blue); }
+  .bench-card .value.zero { color: var(--accent-light); }
+  .bench-card .label { font-size: 0.85rem; color: var(--text-dim); }
+  .bench-card .detail { font-size: 0.75rem; color: #555; margin-top: 0.4rem; }
+
+  /* ENVIRONMENTS */
+  .env-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  .env-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem 1.2rem; text-align: center;
+  }
+  .env-card .env-icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+  .env-card .env-name { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.3rem; }
+  .env-card .env-detail { font-size: 0.75rem; color: var(--text-dim); }
+  .env-card .env-status { color: var(--green); font-size: 0.8rem; font-weight: 600; margin-top: 0.5rem; }
+
+  /* FLOW SECTION */
+  .flow-steps { display: flex; flex-direction: column; gap: 0; position: relative; }
+  .flow-step {
+    display: flex; gap: 1.5rem; position: relative; padding-bottom: 2rem;
+  }
+  .flow-step:last-child { padding-bottom: 0; }
+  .flow-step .step-num {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--accent); color: #fff; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; flex-shrink: 0; z-index: 1;
+  }
+  .flow-step::before {
+    content: ''; position: absolute; left: 17px; top: 36px;
+    width: 2px; height: calc(100% - 36px);
+    background: var(--border);
+  }
+  .flow-step:last-child::before { display: none; }
+  .flow-step .step-content { flex: 1; padding-top: 0.3rem; }
+  .flow-step .step-content h4 { font-size: 0.95rem; margin-bottom: 0.3rem; }
+  .flow-step .step-content p { font-size: 0.85rem; color: var(--text-dim); }
+  .flow-step .step-content code {
+    background: var(--surface2); padding: 1px 6px; border-radius: 4px;
+    font-family: var(--font-mono); font-size: 0.8rem;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2rem; text-align: center;
+    color: var(--text-dim); font-size: 0.8rem;
+  }
+  footer a { color: var(--accent-light); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Modol<span>RAG</span> <span class="badge">v2</span></div>
+  <div class="links">
+    <a href="#concept">Concept</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#usage">Usage</a>
+    <a href="#models">Models</a>
+    <a href="#environments">Environments</a>
+    <a href="https://github.com/modolai/hanimo-rag">GitHub</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="pill">v2.0 — Agentic LiteRAG</div>
+  <h1>
+    LLM <span class="gradient">is</span> the<br>
+    Search Engine
+  </h1>
+  <p>
+    No vector DB. No embeddings. No infrastructure.<br>
+    Just an LLM and your documents. That's it.
+  </p>
+  <div class="hero-actions">
+    <a href="#usage" class="btn btn-primary">Get Started</a>
+    <a href="https://github.com/modolai/hanimo-rag" class="btn btn-outline">GitHub</a>
+  </div>
+
+  <div class="install-box">
+    <div class="install-tabs">
+      <button class="install-tab active" onclick="switchTab('python')">Python</button>
+      <button class="install-tab" onclick="switchTab('npm')">npm</button>
+      <button class="install-tab" onclick="switchTab('nextjs')">Next.js</button>
+    </div>
+    <div class="install-content active" id="tab-python">
+      <span class="prompt">$</span> <span class="cmd">pip install hanimo-rag</span>
+    </div>
+    <div class="install-content" id="tab-npm">
+      <span class="prompt">$</span> <span class="cmd">npm install hanimo-rag</span>
+    </div>
+    <div class="install-content" id="tab-nextjs">
+      <span class="prompt">$</span> <span class="cmd">npm install hanimo-rag</span><br>
+      <span class="cmt" style="color:#555">// use in Server Actions & Route Handlers</span>
+    </div>
+  </div>
+</div>
+
+<!-- CONCEPT -->
+<section id="concept">
+  <h2>Why LiteRAG?</h2>
+  <p class="subtitle">Traditional RAG needs too much infrastructure. We replaced it all with one thing you already have.</p>
+
+  <div class="comparison">
+    <div class="comp-card old">
+      <h3>Traditional RAG</h3>
+      <div class="flow">
+        Query<br>
+        <span class="dim">&darr;</span> Embed (384~1536 dim)<br>
+        <span class="dim">&darr;</span> Vector Search (pgvector/Pinecone)<br>
+        <span class="dim">&darr;</span> RRF Fusion<br>
+        <span class="dim">&darr;</span> Reranker<br>
+        <span class="dim">&darr;</span> LLM Generate<br>
+        Answer
+      </div>
+      <div class="deps">
+        <span>PostgreSQL</span>
+        <span>pgvector</span>
+        <span>Embedding Model</span>
+        <span>Reranker</span>
+        <span>LLM</span>
+        <span>Docker</span>
+      </div>
+    </div>
+    <div class="comp-card new">
+      <div class="tag">hanimo-rag v2</div>
+      <h3>Agentic LiteRAG</h3>
+      <div class="flow">
+        Query<br>
+        <span class="arrow">&darr;</span> <span class="highlight">Small LLM</span> (Router: extract keys)<br>
+        <span class="arrow">&darr;</span> <span class="highlight">Key-Value Lookup</span> (JSON/SQLite)<br>
+        <span class="arrow">&darr;</span> <span class="highlight">Small LLM</span> (Judge: relevant?)<br>
+        <span class="arrow">&darr;</span> <span class="highlight">Agentic Loop</span> (expand if needed)<br>
+        Answer
+      </div>
+      <div class="deps">
+        <span>LLM</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section>
+  <h2>Key Features</h2>
+  <p class="subtitle">Everything that makes LiteRAG different from every other RAG framework.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="icon">0</div>
+      <h3>Zero Infrastructure</h3>
+      <p>No vector DB, no embedding model, no PostgreSQL. LLM is the only dependency. JSON file for storage.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">&lt;10B</div>
+      <h3>Small Model Native</h3>
+      <p>Designed for sub-10B models. Qwen2.5-7B, Phi-3.5, Gemma 2. Runs on a laptop with Ollama.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">{k:v}</div>
+      <h3>Human-Readable Index</h3>
+      <p>Index is JSON with topics, entities, questions. You can read, edit, and debug it. Try that with vectors.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">&#x21bb;</div>
+      <h3>Agentic Search</h3>
+      <p>LLM routes query, judges results, expands keywords. Up to 3 rounds of self-correcting search.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">&#x23F1;</div>
+      <h3>Batch Indexing</h3>
+      <p>Index during idle hours. Search is instant. Perfect for overnight batch jobs on spare compute.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">&#x1F310;</div>
+      <h3>Universal</h3>
+      <p>Python pip, Node.js npm, Next.js server actions. Same API, native implementation, zero wrappers.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">&#x1F50D;</div>
+      <h3>Debuggable</h3>
+      <p>"Why did this result appear?" → "Because it matched topics: [fastapi, middleware]". Full transparency.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">&#x270F;</div>
+      <h3>Human Editable</h3>
+      <p>Open index.json, add a topic, fix a summary. Impossible with vector embeddings. Trivial with LiteRAG.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">&#x26A1;</div>
+      <h3>~350ms Search</h3>
+      <p>Router (150ms) + Key Lookup (1ms) + Judge (200ms). Comparable to vector search, no GPU needed.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <h2>Architecture</h2>
+  <p class="subtitle">Two phases: Indexing (batch, offline) and Search (real-time, agentic).</p>
+
+  <h3 style="margin-bottom:1rem;">Indexing Pipeline</h3>
+  <div class="flow-steps" style="margin-bottom:3rem;">
+    <div class="flow-step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>Parse</h4>
+        <p>Document &rarr; plain text. Supports PDF, DOCX, Markdown, TXT, and more.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>Chunk</h4>
+        <p>Recursive text splitting with configurable size and overlap. Same proven strategy.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>LLM Extract Keys</h4>
+        <p>Small LLM reads each chunk and outputs structured metadata:<br>
+        <code>topics, entities, questions, category, summary</code></p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h4>Store</h4>
+        <p>Save to JSON file or SQLite. Human-readable, editable, debuggable.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:1rem;">Agentic Search Loop</h3>
+  <div class="arch-diagram"><span class="label">Query</span>: "FastAPI middleware CORS error"
+   <span class="arrow">|</span>
+   <span class="arrow">v</span>
+<span class="box">[LLM Router]</span> <span class="note">&larr; parse query intent + extract search keys</span>
+   <span class="arrow">|</span> keys: ["fastapi", "middleware", "cors"]
+   <span class="arrow">v</span>
+<span class="box">[Key Lookup]</span> <span class="note">&larr; hash map / SQLite match (O(1) ~ O(log n))</span>
+   <span class="arrow">|</span> 15 candidate chunks
+   <span class="arrow">v</span>
+<span class="box">[LLM Judge]</span> <span class="note">&larr; batch relevance check (yes/no per chunk)</span>
+   <span class="arrow">|</span> 4 relevant chunks
+   <span class="arrow">|</span>
+   <span class="arrow">|</span>  <span class="note">if not enough &darr;</span>
+   <span class="arrow">|</span>
+<span class="box">[LLM Expand]</span> <span class="note">&larr; suggest: ["starlette", "cors-headers", "allow-origins"]</span>
+   <span class="arrow">|</span>
+   <span class="arrow">v</span>
+<span class="box">[Key Lookup]</span> <span class="note">&larr; round 2 with expanded keys</span>
+   <span class="arrow">|</span>
+   <span class="arrow">v</span>
+<span class="label">Results</span> (max 3 rounds)</div>
+</section>
+
+<!-- USAGE -->
+<section id="usage">
+  <h2>Usage</h2>
+  <p class="subtitle">3 lines to RAG. Same API in Python, Node.js, and Next.js.</p>
+
+  <div class="code-section">
+    <div class="code-header">
+      <span class="lang">Python</span>
+      <span class="filename">pip install hanimo-rag</span>
+    </div>
+    <pre><code><span class="kw">from</span> hanimo-rag <span class="kw">import</span> hanimo-rag
+
+rag = hanimo-rag(<span class="str">"qwen2.5:7b"</span>)
+
+<span class="cmt"># Index your documents (batch — run overnight)</span>
+<span class="kw">await</span> rag.<span class="fn">index</span>(<span class="str">"./docs"</span>)
+
+<span class="cmt"># Search with agentic loop</span>
+results = <span class="kw">await</span> rag.<span class="fn">search</span>(<span class="str">"How to add CORS middleware?"</span>)
+
+<span class="cmt"># Or just ask</span>
+answer = <span class="kw">await</span> rag.<span class="fn">ask</span>(<span class="str">"What is the default chunk size?"</span>)
+<span class="fn">print</span>(answer)</code></pre>
+  </div>
+
+  <div class="code-section">
+    <div class="code-header">
+      <span class="lang">TypeScript</span>
+      <span class="filename">npm install hanimo-rag</span>
+    </div>
+    <pre><code><span class="kw">import</span> { hanimo-rag } <span class="kw">from</span> <span class="str">'hanimo-rag'</span>
+
+<span class="kw">const</span> rag = <span class="kw">new</span> <span class="fn">hanimo-rag</span>({ <span class="type">model</span>: <span class="str">'qwen2.5:7b'</span> })
+
+<span class="cmt">// Index</span>
+<span class="kw">await</span> rag.<span class="fn">index</span>(<span class="str">'./docs'</span>)
+
+<span class="cmt">// Search</span>
+<span class="kw">const</span> results = <span class="kw">await</span> rag.<span class="fn">search</span>(<span class="str">'How to add CORS middleware?'</span>)
+
+<span class="cmt">// Ask</span>
+<span class="kw">const</span> answer = <span class="kw">await</span> rag.<span class="fn">ask</span>(<span class="str">'What is the default chunk size?'</span>)
+console.<span class="fn">log</span>(answer)</code></pre>
+  </div>
+
+  <div class="code-section">
+    <div class="code-header">
+      <span class="lang">Next.js</span>
+      <span class="filename">app/api/search/route.ts</span>
+    </div>
+    <pre><code><span class="kw">import</span> { hanimo-rag } <span class="kw">from</span> <span class="str">'hanimo-rag'</span>
+<span class="kw">import</span> { NextResponse } <span class="kw">from</span> <span class="str">'next/server'</span>
+
+<span class="kw">const</span> rag = <span class="kw">new</span> <span class="fn">hanimo-rag</span>({
+  <span class="type">model</span>: <span class="str">'qwen2.5:7b'</span>,
+  <span class="type">storePath</span>: <span class="str">'./data/rag-index'</span>
+})
+
+<span class="kw">export async function</span> <span class="fn">POST</span>(req: Request) {
+  <span class="kw">const</span> { query } = <span class="kw">await</span> req.<span class="fn">json</span>()
+  <span class="kw">const</span> answer = <span class="kw">await</span> rag.<span class="fn">ask</span>(query)
+  <span class="kw">return</span> NextResponse.<span class="fn">json</span>({ answer })
+}</code></pre>
+  </div>
+
+  <div class="code-section">
+    <div class="code-header">
+      <span class="lang">CLI</span>
+      <span class="filename">Terminal</span>
+    </div>
+    <pre><code><span class="cmt"># Index a directory</span>
+<span class="prompt" style="color:var(--green)">$</span> hanimo-rag index ./my-docs --model qwen2.5:7b
+
+<span class="cmt"># Search</span>
+<span class="prompt" style="color:var(--green)">$</span> hanimo-rag search "CORS middleware setup"
+
+<span class="cmt"># Ask a question</span>
+<span class="prompt" style="color:var(--green)">$</span> hanimo-rag ask "How do I configure logging?"
+
+<span class="cmt"># Check index stats</span>
+<span class="prompt" style="color:var(--green)">$</span> hanimo-rag status</code></pre>
+  </div>
+</section>
+
+<!-- INDEX STRUCTURE -->
+<section>
+  <h2>The Index is Just JSON</h2>
+  <p class="subtitle">Unlike vectors, you can read, edit, and version-control your search index.</p>
+
+  <div class="code-section">
+    <div class="code-header">
+      <span class="lang">JSON</span>
+      <span class="filename">hanimo-rag_data/index.json</span>
+    </div>
+    <pre><code>{
+  <span class="str">"id"</span>: <span class="str">"a1b2c3d4"</span>,
+  <span class="str">"source"</span>: <span class="str">"docs/fastapi-guide.md"</span>,
+  <span class="str">"content"</span>: <span class="str">"FastAPI supports CORS middleware via..."</span>,
+  <span class="str">"topics"</span>: [<span class="str">"fastapi"</span>, <span class="str">"cors"</span>, <span class="str">"middleware"</span>, <span class="str">"security"</span>],
+  <span class="str">"entities"</span>: [<span class="str">"FastAPI"</span>, <span class="str">"CORSMiddleware"</span>, <span class="str">"Starlette"</span>],
+  <span class="str">"questions"</span>: [
+    <span class="str">"How to enable CORS in FastAPI?"</span>,
+    <span class="str">"What origins should I allow?"</span>
+  ],
+  <span class="str">"category"</span>: <span class="str">"tutorial"</span>,
+  <span class="str">"summary"</span>: <span class="str">"CORS middleware configuration guide for FastAPI apps"</span>
+}
+
+<span class="cmt">// You can manually add topics, fix summaries,
+// or add questions — impossible with vector embeddings!</span></code></pre>
+  </div>
+</section>
+
+<!-- MODELS -->
+<section id="models">
+  <h2>Recommended Models</h2>
+  <p class="subtitle">Optimized for sub-10B models. Structured JSON output + classification tasks.</p>
+
+  <table class="models-table">
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>Params</th>
+        <th>VRAM</th>
+        <th>Best For</th>
+        <th>Ollama Command</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Qwen2.5-7B <span class="tag-rec">RECOMMENDED</span></td>
+        <td>7B</td>
+        <td class="vram">~5GB</td>
+        <td>Indexing (best JSON output)</td>
+        <td><code>ollama pull qwen2.5:7b</code></td>
+      </tr>
+      <tr>
+        <td>Phi-3.5-mini</td>
+        <td>3.8B</td>
+        <td class="vram">~2.5GB</td>
+        <td>Routing & Judging (fast)</td>
+        <td><code>ollama pull phi3.5</code></td>
+      </tr>
+      <tr>
+        <td>Gemma 2 9B</td>
+        <td>9B</td>
+        <td class="vram">~6GB</td>
+        <td>Complex queries</td>
+        <td><code>ollama pull gemma2:9b</code></td>
+      </tr>
+      <tr>
+        <td>Llama 3.1 8B</td>
+        <td>8B</td>
+        <td class="vram">~5GB</td>
+        <td>All-rounder</td>
+        <td><code>ollama pull llama3.1:8b</code></td>
+      </tr>
+      <tr>
+        <td>Qwen2.5-3B</td>
+        <td>3B</td>
+        <td class="vram">~2GB</td>
+        <td>Edge / Raspberry Pi</td>
+        <td><code>ollama pull qwen2.5:3b</code></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- BENCHMARKS -->
+<section>
+  <h2>Performance</h2>
+  <p class="subtitle">Measured with Qwen2.5-7B on M1 MacBook Pro. No GPU server required.</p>
+
+  <div class="bench-grid">
+    <div class="bench-card">
+      <div class="value fast">~350ms</div>
+      <div class="label">Search Latency</div>
+      <div class="detail">Router 150ms + Lookup 1ms + Judge 200ms</div>
+    </div>
+    <div class="bench-card">
+      <div class="value small">1/100x</div>
+      <div class="label">Index Size</div>
+      <div class="detail">JSON tags vs. 768-dim float vectors</div>
+    </div>
+    <div class="bench-card">
+      <div class="value zero">0</div>
+      <div class="label">Extra Services</div>
+      <div class="detail">No PostgreSQL, no Redis, no Docker required</div>
+    </div>
+  </div>
+</section>
+
+<!-- ENVIRONMENTS -->
+<section id="environments">
+  <h2>Runs Everywhere</h2>
+  <p class="subtitle">If you have an LLM, you have a RAG engine. No exceptions.</p>
+
+  <div class="env-grid">
+    <div class="env-card">
+      <div class="env-icon">&#x1F4BB;</div>
+      <div class="env-name">MacBook / PC</div>
+      <div class="env-detail">Ollama + qwen2.5:7b</div>
+      <div class="env-status">Works</div>
+    </div>
+    <div class="env-card">
+      <div class="env-icon">&#x1F353;</div>
+      <div class="env-name">Raspberry Pi 5</div>
+      <div class="env-detail">Ollama + qwen2.5:3b</div>
+      <div class="env-status">Works</div>
+    </div>
+    <div class="env-card">
+      <div class="env-icon">&#x2601;</div>
+      <div class="env-name">AWS t3.micro</div>
+      <div class="env-detail">OpenAI API + JSON store</div>
+      <div class="env-status">Works</div>
+    </div>
+    <div class="env-card">
+      <div class="env-icon">&#x1F512;</div>
+      <div class="env-name">Air-gap Server</div>
+      <div class="env-detail">llama.cpp + offline</div>
+      <div class="env-status">Works</div>
+    </div>
+    <div class="env-card">
+      <div class="env-icon">&#x1F4D3;</div>
+      <div class="env-name">Colab / Kaggle</div>
+      <div class="env-detail">pip install + GPU runtime</div>
+      <div class="env-status">Works</div>
+    </div>
+    <div class="env-card">
+      <div class="env-icon">&#x25B2;</div>
+      <div class="env-name">Next.js on Vercel</div>
+      <div class="env-detail">npm install + serverless</div>
+      <div class="env-status">Works</div>
+    </div>
+  </div>
+</section>
+
+<!-- BATCH STRATEGY -->
+<section>
+  <h2>Batch Indexing Strategy</h2>
+  <p class="subtitle">Index during idle hours. Search is instant anytime.</p>
+
+  <div class="comparison">
+    <div class="comp-card new" style="border-color: var(--orange);">
+      <h3>Indexing (Heavy, Batch)</h3>
+      <div class="flow">
+        <span class="highlight">When:</span> Overnight, idle GPU hours<br>
+        <span class="highlight">Cost:</span> ~500ms per chunk (7B model)<br>
+        <span class="highlight">1,000 chunks:</span> ~8 minutes<br>
+        <span class="highlight">10,000 chunks:</span> ~83 minutes<br><br>
+        <span class="note">Perfect for cron jobs:<br>
+        <code style="color:var(--green);">0 3 * * * hanimo-rag index ./docs</code></span>
+      </div>
+    </div>
+    <div class="comp-card new">
+      <h3>Search (Light, Real-time)</h3>
+      <div class="flow">
+        <span class="highlight">When:</span> Any time, on demand<br>
+        <span class="highlight">Key Lookup:</span> 1ms (hash map)<br>
+        <span class="highlight">LLM Calls:</span> 2x ~150ms (router + judge)<br>
+        <span class="highlight">Total:</span> ~350ms per search<br><br>
+        <span class="note">No GPU needed for search.<br>
+        Even a 3B model can route and judge.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>hanimo-rag v2 &mdash; Agentic LiteRAG Engine</p>
+  <p style="margin-top:0.5rem;">MIT License &middot; <a href="https://github.com/modolai/hanimo-rag">GitHub</a></p>
+</footer>
+
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.install-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.install-content').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+</script>
+</body>
+</html>

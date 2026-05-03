@@ -1,6 +1,6 @@
 # hanimo-rag Database Schema
 
-All tables use the `hanimo-rag_` prefix to coexist with host application tables (e.g., hanimo-webui) in the same PostgreSQL database.
+All tables use the `hanimo-rag_` prefix to coexist with host application tables (e.g., ModolAI) in the same PostgreSQL database.
 
 ## Required Extensions
 

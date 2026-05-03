@@ -7,7 +7,7 @@
 │                         hanimo-rag                                │
 │                                                                 │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────────────┐  │
-│  │ REST API │  │Dashboard │  │   CLI    │  │ hanimo-webui       │  │
+│  │ REST API │  │Dashboard │  │   CLI    │  │ ModolAI       │  │
 │  │ FastAPI  │  │React SPA │  │ argparse │  │ (HTTP client) │  │
 │  └────┬─────┘  └──────────┘  └────┬─────┘  └───────┬───────┘  │
 │       │                           │                 │          │
@@ -229,7 +229,7 @@ Stage 1: node:20-slim
 Stage 2: python:3.11-slim
   → pip install hanimo-rag
   → COPY --from=stage1 hanimo-rag/static/
-  → uvicorn hanimo_rag.main:app
+  → uvicorn hanimo-rag.main:app
 ```
 
 ### Service Dependencies

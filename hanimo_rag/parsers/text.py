@@ -1,60 +1,45 @@
 """Plain text parser with encoding detection."""
 from __future__ import annotations
 
-import os
+import logging
+from pathlib import Path
 
-from hanimo_rag.parsers.base import ParsedDocument, ParserBase
+from hanimo_rag.parsers.base import ParsedDocument
 
-_ENCODINGS = ["utf-8", "utf-8-sig", "latin-1", "cp1252"]
+logger = logging.getLogger(__name__)
+
+# Encodings to try in order
+_ENCODINGS = ["utf-8", "utf-8-sig", "euc-kr", "cp949", "latin-1", "ascii"]
 
 
-class TextParser(ParserBase):
-    """Parse plain text files with automatic encoding detection."""
+class TextParser:
+    """Parse plain text files with encoding auto-detection."""
 
-    def supported_mime_types(self) -> list[str]:
-        return [
-            "text/plain",
-            "text/csv",
-            "text/tab-separated-values",
-            "application/json",
-            "application/xml",
-            "text/xml",
-            "text/html",
-        ]
+    def parse(self, path: str) -> ParsedDocument:
+        p = Path(path)
+        if not p.exists():
+            raise FileNotFoundError(f"File not found: {path}")
 
-    def parse(self, file_path: str) -> ParsedDocument:
-        text = ""
-        detected_encoding = "unknown"
+        text = self._read_with_fallback(p)
+        return ParsedDocument(
+            text=text,
+            metadata={
+                "source": str(p),
+                "filename": p.name,
+                "extension": p.suffix,
+                "size_bytes": p.stat().st_size,
+            },
+        )
 
-        for enc in _ENCODINGS:
+    def _read_with_fallback(self, path: Path) -> str:
+        """Try multiple encodings to read the file."""
+        for encoding in _ENCODINGS:
             try:
-                with open(file_path, encoding=enc, errors="strict") as fh:
-                    text = fh.read()
-                detected_encoding = enc
-                break
-            except (UnicodeDecodeError, LookupError):
+                return path.read_text(encoding=encoding)
+            except (UnicodeDecodeError, UnicodeError):
                 continue
-            except Exception as exc:
-                return ParsedDocument(text="", metadata={"error": str(exc)})
 
-        if not text and detected_encoding == "unknown":
-            # Last resort: read with replacement
-            try:
-                with open(file_path, encoding="utf-8", errors="replace") as fh:
-                    text = fh.read()
-                detected_encoding = "utf-8 (with replacements)"
-            except Exception as exc:
-                return ParsedDocument(text="", metadata={"error": str(exc)})
-
-        try:
-            file_size = os.path.getsize(file_path)
-        except OSError:
-            file_size = -1
-
-        metadata: dict = {
-            "file_size": file_size,
-            "encoding": detected_encoding,
-        }
-
-        pages = [text] if text else []
-        return ParsedDocument(text=text, metadata=metadata, pages=pages)
+        # Last resort: read as bytes and decode with replacement
+        logger.warning("Could not detect encoding for %s; using replacement chars", path)
+        raw = path.read_bytes()
+        return raw.decode("utf-8", errors="replace")

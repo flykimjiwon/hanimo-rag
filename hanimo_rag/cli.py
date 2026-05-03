@@ -1,350 +1,146 @@
-"""CLI entry point for hanimo_rag."""
+"""HanimoRAG CLI."""
+from __future__ import annotations
+
 import argparse
 import asyncio
-from typing import Optional
+import json
+import logging
+import sys
 
-import uvicorn
 
-
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
-        description="hanimo_rag — PostgreSQL-native hybrid RAG engine",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  hanimo_rag serve                          Start server on port 8000
-  hanimo_rag serve --port 3000 --reload     Dev mode on port 3000
-  hanimo_rag init-db                        Initialize database schema
-  hanimo_rag ingest report.pdf              Ingest a document
-  hanimo_rag search "인증 방법"              Search documents
-  hanimo_rag ask "매출 현황은?"              Ask a question
-  hanimo_rag quickstart                     Auto-setup Docker + DB + Ollama
-  hanimo_rag status                         Check system status
-        """,
+        prog="hanimo_rag",
+        description="HanimoRAG v2 — Agentic LiteRAG engine",
     )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
+
     subparsers = parser.add_subparsers(dest="command")
 
-    # serve
-    serve_parser = subparsers.add_parser("serve", help="Start the hanimo_rag server")
-    serve_parser.add_argument("--host", default="0.0.0.0")
-    serve_parser.add_argument("--port", type=int, default=8000)
-    serve_parser.add_argument("--reload", action="store_true")
-    serve_parser.add_argument("--db", help="PostgreSQL URI (overrides HANIMO_RAG_POSTGRES_URI)")
+    # ── index ──
+    idx = subparsers.add_parser("index", help="Index files or directories")
+    idx.add_argument("path", help="File or directory to index")
+    idx.add_argument("--model", default="qwen2.5:7b", help="LLM model (default: qwen2.5:7b)")
+    idx.add_argument("--store", default="./hanimo_rag_data", help="Store path (default: ./hanimo_rag_data)")
+    idx.add_argument("--store-type", default="json", choices=["json", "sqlite"], help="Store type")
+    idx.add_argument("--chunk-size", type=int, default=512, help="Chunk size in chars")
+    idx.add_argument("--chunk-overlap", type=int, default=50, help="Chunk overlap in chars")
 
-    # init-db
-    init_parser = subparsers.add_parser("init-db", help="Initialize database schema")
-    init_parser.add_argument("--db", help="PostgreSQL URI")
+    # ── search ──
+    srch = subparsers.add_parser("search", help="Search indexed documents")
+    srch.add_argument("query", help="Search query")
+    srch.add_argument("--model", default="qwen2.5:7b", help="LLM model")
+    srch.add_argument("--store", default="./hanimo_rag_data", help="Store path")
+    srch.add_argument("--store-type", default="json", choices=["json", "sqlite"], help="Store type")
+    srch.add_argument("--top-k", type=int, default=5, help="Number of results")
+    srch.add_argument("--max-rounds", type=int, default=3, help="Max search rounds")
 
-    # ingest
-    ingest_parser = subparsers.add_parser("ingest", help="Ingest a document")
-    ingest_parser.add_argument("file", help="Path to document file")
-    ingest_parser.add_argument("--db", help="PostgreSQL URI")
-    ingest_parser.add_argument("--collection", "-c", help="Add to collection")
+    # ── ask ──
+    ask = subparsers.add_parser("ask", help="Ask a question (search + generate)")
+    ask.add_argument("question", help="Question to ask")
+    ask.add_argument("--model", default="qwen2.5:7b", help="LLM model")
+    ask.add_argument("--store", default="./hanimo_rag_data", help="Store path")
+    ask.add_argument("--store-type", default="json", choices=["json", "sqlite"], help="Store type")
+    ask.add_argument("--top-k", type=int, default=5, help="Number of context chunks")
 
-    # search
-    search_parser = subparsers.add_parser("search", help="Search documents")
-    search_parser.add_argument("query", help="Search query")
-    search_parser.add_argument("--top-k", "-k", type=int, default=5, help="Number of results")
-    search_parser.add_argument("--mode", "-m", default="hybrid", choices=["hybrid", "vector", "fts", "graph"])
-    search_parser.add_argument("--collection", "-c", help="Search within collection")
-    search_parser.add_argument("--db", help="PostgreSQL URI")
+    # ── status ──
+    stat = subparsers.add_parser("status", help="Show index statistics")
+    stat.add_argument("--store", default="./hanimo_rag_data", help="Store path")
+    stat.add_argument("--store-type", default="json", choices=["json", "sqlite"], help="Store type")
 
-    # ask
-    ask_parser = subparsers.add_parser("ask", help="Ask a question (RAG)")
-    ask_parser.add_argument("question", help="Your question")
-    ask_parser.add_argument("--top-k", "-k", type=int, default=5)
-    ask_parser.add_argument("--mode", "-m", default="hybrid", choices=["hybrid", "vector", "fts", "graph"])
-    ask_parser.add_argument("--collection", "-c", help="Search within collection")
-    ask_parser.add_argument("--stream", "-s", action="store_true", help="Stream output")
-    ask_parser.add_argument("--db", help="PostgreSQL URI")
-
-    # quickstart
-    subparsers.add_parser("quickstart", help="Auto-setup Docker + PostgreSQL + Ollama")
-
-    # status
-    subparsers.add_parser("status", help="Check system status")
+    # ── serve ──
+    srv = subparsers.add_parser("serve", help="Start API server (requires [server] extra)")
+    srv.add_argument("--model", default="qwen2.5:7b", help="LLM model")
+    srv.add_argument("--store", default="./hanimo_rag_data", help="Store path")
+    srv.add_argument("--store-type", default="json", choices=["json", "sqlite"], help="Store type")
+    srv.add_argument("--host", default="0.0.0.0", help="Server host")
+    srv.add_argument("--port", type=int, default=8000, help="Server port")
 
     args = parser.parse_args()
 
-    if args.command == "serve":
-        if args.db:
-            import os
-            os.environ["HANIMO_RAG_POSTGRES_URI"] = args.db
-        uvicorn.run(
-            "hanimo_rag.main:app",
-            host=args.host,
-            port=args.port,
-            reload=args.reload,
-        )
-    elif args.command == "init-db":
-        asyncio.run(_init_db(args.db))
-    elif args.command == "ingest":
-        asyncio.run(_ingest_file(args.file, args.db, getattr(args, "collection", None)))
-    elif args.command == "search":
-        asyncio.run(_search(args.query, args.top_k, args.mode, getattr(args, "collection", None), args.db))
-    elif args.command == "ask":
-        asyncio.run(_ask(args.question, args.top_k, args.mode, getattr(args, "collection", None), args.stream, args.db))
-    elif args.command == "quickstart":
-        asyncio.run(_quickstart())
-    elif args.command == "status":
-        asyncio.run(_status())
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG, format="%(name)s %(levelname)s: %(message)s")
     else:
+        logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    if not args.command:
         parser.print_help()
+        sys.exit(1)
+
+    if args.command == "status":
+        _cmd_status(args)
+    elif args.command == "index":
+        _cmd_index(args)
+    elif args.command == "search":
+        _cmd_search(args)
+    elif args.command == "ask":
+        _cmd_ask(args)
+    elif args.command == "serve":
+        _cmd_serve(args)
 
 
-async def _init_db(db_uri: Optional[str] = None):
-    """Initialize database schema."""
-    if db_uri:
-        import os
-        os.environ["HANIMO_RAG_POSTGRES_URI"] = db_uri
+def _cmd_status(args: argparse.Namespace) -> None:
+    from hanimo_rag.config import Config
+    from hanimo_rag.store import create_store
 
-    from hanimo_rag.db import init_schema, close_pool
-    try:
-        await init_schema()
-        print("Database schema initialized successfully.")
-    finally:
-        await close_pool()
+    config = Config(store_path=args.store, store_type=args.store_type)
+    store = create_store(config)
+    stats = store.get_stats()
+    print(json.dumps(stats, indent=2))
 
 
-async def _ingest_file(file_path: str, db_uri: Optional[str] = None, collection: Optional[str] = None):
-    """Ingest a single file from CLI."""
-    if db_uri:
-        import os
-        os.environ["HANIMO_RAG_POSTGRES_URI"] = db_uri
+def _cmd_index(args: argparse.Namespace) -> None:
+    from hanimo_rag import HanimoRAG
 
-    from hanimo_rag import hanimo_rag
-    rag = hanimo_rag(auto_init=True)
-    try:
-        print(f"Ingesting {file_path}...")
-        doc_id = await rag.aingest(file_path, collection)
-        print(f"Done. Document ID: {doc_id}")
-        if collection:
-            print(f"Added to collection: {collection}")
-    finally:
-        await rag.aclose()
+    rag = HanimoRAG(model=args.model, store_path=args.store, store_type=args.store_type)
+    result = asyncio.run(rag.index(args.path, chunk_size=args.chunk_size, chunk_overlap=args.chunk_overlap))
+    print(f"Indexed {result['indexed']} file(s):")
+    for f in result["files"]:
+        status = f.get("status", "unknown")
+        chunks = f.get("chunks", 0)
+        source = f.get("source", "?")
+        print(f"  {source}: {chunks} chunks ({status})")
 
 
-async def _search(query: str, top_k: int, mode: str, collection: Optional[str], db_uri: Optional[str]):
-    """Search from CLI."""
-    if db_uri:
-        import os
-        os.environ["HANIMO_RAG_POSTGRES_URI"] = db_uri
+def _cmd_search(args: argparse.Namespace) -> None:
+    from hanimo_rag import HanimoRAG
 
-    from hanimo_rag import hanimo_rag
-    rag = hanimo_rag(auto_init=True)
-    try:
-        results = await rag.asearch(query, top_k, mode, collection)
-        if not results:
-            print("No results found.")
-            return
+    rag = HanimoRAG(model=args.model, store_path=args.store, store_type=args.store_type)
+    results = asyncio.run(rag.search(args.query, top_k=args.top_k, max_rounds=args.max_rounds))
 
-        print(f"\n--- {len(results)} results for: \"{query}\" ---\n")
-        for i, r in enumerate(results, 1):
-            source = f" [{r.get('file_name', '')}]" if r.get("file_name") else ""
-            score = f" (score: {r['score']:.4f})" if r.get("score") else ""
-            match = f" [{r.get('match_type', '')}]" if r.get("match_type") else ""
-            print(f"  {i}.{source}{match}{score}")
-            content = r["content"][:200].replace("\n", " ")
-            print(f"     {content}...")
-            print()
-    finally:
-        await rag.aclose()
-
-
-async def _ask(question: str, top_k: int, mode: str, collection: Optional[str], stream: bool, db_uri: Optional[str]):
-    """Ask a question from CLI."""
-    if db_uri:
-        import os
-        os.environ["HANIMO_RAG_POSTGRES_URI"] = db_uri
-
-    from hanimo_rag import hanimo_rag
-    rag = hanimo_rag(auto_init=True)
-    try:
-        if stream:
-            print()
-            await rag.aask(question, top_k, mode, collection, stream=True)
-        else:
-            answer = await rag.aask(question, top_k, mode, collection)
-            print(f"\n{answer}")
-    finally:
-        await rag.aclose()
-
-
-async def _quickstart():
-    """Auto-setup Docker + PostgreSQL + Ollama."""
-    import shutil
-    import subprocess
-
-    print("=" * 50)
-    print("  hanimo_rag Quickstart")
-    print("=" * 50)
-    print()
-
-    # 1. Check Docker
-    docker = shutil.which("docker")
-    if not docker:
-        print("Docker not found.")
-        print("  macOS: brew install --cask docker")
-        print("  Linux: https://docs.docker.com/engine/install/")
+    if not results:
+        print("No results found.")
         return
 
-    # Check Docker is running
-    result = subprocess.run(["docker", "info"], capture_output=True, timeout=10)
-    if result.returncode != 0:
-        print("Docker is not running. Please start Docker Desktop and try again.")
-        return
-    print("[1/4] Docker: running")
+    for i, r in enumerate(results, 1):
+        print(f"\n{'='*60}")
+        print(f"Result {i} [{r.get('category', '?')}] from {r.get('source', '?')}")
+        print(f"Summary: {r.get('summary', 'N/A')}")
+        print(f"{'-'*60}")
+        content = r.get("content", "")
+        print(content[:500] + ("..." if len(content) > 500 else ""))
 
-    # 2. Check/start PostgreSQL via docker compose
-    compose_file = _find_compose_file()
-    if compose_file:
-        print("[2/4] Starting PostgreSQL via docker compose...")
-        subprocess.run(
-            ["docker", "compose", "-f", str(compose_file), "up", "-d", "db"],
-            capture_output=True, timeout=60,
-        )
-        # Wait for DB to be ready
-        import time
-        for attempt in range(15):
-            check = subprocess.run(
-                ["docker", "compose", "-f", str(compose_file), "exec", "-T", "db",
-                 "pg_isready", "-U", "hanimo_rag"],
-                capture_output=True, timeout=10,
-            )
-            if check.returncode == 0:
-                break
-            time.sleep(2)
-        print("[2/4] PostgreSQL: ready")
-    else:
-        print("[2/4] No docker-compose.yml found. Starting standalone PostgreSQL...")
-        subprocess.run([
-            "docker", "run", "-d",
-            "--name", "hanimo_rag-db",
-            "-e", "POSTGRES_DB=hanimo_rag",
-            "-e", "POSTGRES_USER=hanimo_rag",
-            "-e", "POSTGRES_PASSWORD=hanimo_rag",
-            "-p", "5432:5432",
-            "pgvector/pgvector:pg15",
-        ], capture_output=True, timeout=30)
-        import time
-        time.sleep(5)
-        print("[2/4] PostgreSQL: started (port 5432)")
 
-    # 3. Check Ollama
-    ollama = shutil.which("ollama")
-    if ollama:
-        # Check if running
-        import httpx
-        try:
-            httpx.get("http://localhost:11434/api/tags", timeout=5)
-            print("[3/4] Ollama: running")
-        except Exception:
-            print("[3/4] Starting Ollama...")
-            subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            import time
-            time.sleep(3)
+def _cmd_ask(args: argparse.Namespace) -> None:
+    from hanimo_rag import HanimoRAG
 
-        # Pull embedding model
-        result = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=10)
-        if "nomic-embed-text" not in (result.stdout or ""):
-            print("     Pulling nomic-embed-text model...")
-            subprocess.run(["ollama", "pull", "nomic-embed-text"], timeout=300)
-        print("[3/4] Embedding model: ready")
-    else:
-        print("[3/4] Ollama not found (optional)")
-        print("     Install: brew install ollama (macOS) / https://ollama.ai")
-        print("     Or use OpenAI: export HANIMO_RAG_EMBEDDING_PROVIDER=openai")
+    rag = HanimoRAG(model=args.model, store_path=args.store, store_type=args.store_type)
+    answer = asyncio.run(rag.ask(args.question, top_k=args.top_k))
+    print(answer)
 
-    # 4. Initialize DB schema
-    print("[4/4] Initializing database schema...")
+
+def _cmd_serve(args: argparse.Namespace) -> None:
     try:
-        from hanimo_rag.db import init_schema, close_pool
-        await init_schema()
-        await close_pool()
-        print("[4/4] Database schema: ready")
-    except Exception as e:
-        print(f"[4/4] Schema init failed: {e}")
-        print("     Check HANIMO_RAG_POSTGRES_URI setting")
-        return
+        from hanimo_rag.server import create_app
+    except ImportError:
+        print("Server requires FastAPI and uvicorn. Install with:")
+        print("  pip install hanimo_rag[server]")
+        sys.exit(1)
 
-    print()
-    print("=" * 50)
-    print("  Setup complete!")
-    print("=" * 50)
-    print()
-    print("  Start server:  hanimo_rag serve")
-    print("  Ingest file:   hanimo_rag ingest report.pdf")
-    print("  Search:        hanimo_rag search \"your query\"")
-    print("  Ask question:  hanimo_rag ask \"your question\"")
-    print("  Dashboard:     http://localhost:8000/dashboard")
-    print()
-    print("  Python:")
-    print("    from hanimo_rag import hanimo_rag")
-    print("    rag = hanimo_rag()")
-    print("    rag.ingest('report.pdf')")
-    print("    answer = rag.ask('질문')")
-    print()
+    import uvicorn
 
-
-async def _status():
-    """Check system status."""
-    import httpx
-
-    print("hanimo_rag Status Check")
-    print("-" * 40)
-
-    # PostgreSQL
-    try:
-        from hanimo_rag.db import get_pool, fetchval, close_pool
-        await get_pool()
-        await fetchval("SELECT version()")
-        doc_count = await fetchval("SELECT count(*) FROM hanimo_rag_documents")
-        chunk_count = await fetchval("SELECT count(*) FROM hanimo_rag_document_chunks")
-        node_count = await fetchval("SELECT count(*) FROM hanimo_rag_graph_nodes")
-        await close_pool()
-        print("  PostgreSQL:  connected")
-        print(f"  Documents:   {doc_count}")
-        print(f"  Chunks:      {chunk_count}")
-        print(f"  Graph nodes: {node_count}")
-    except Exception as e:
-        print(f"  PostgreSQL:  NOT connected ({e})")
-
-    # Ollama
-    try:
-        async with httpx.AsyncClient(timeout=5) as client:
-            resp = await client.get("http://localhost:11434/api/tags")
-            models = [m["name"] for m in resp.json().get("models", [])]
-            print(f"  Ollama:      running ({len(models)} models)")
-            if "nomic-embed-text:latest" in models:
-                print("  Embedding:   nomic-embed-text ready")
-            else:
-                print("  Embedding:   nomic-embed-text NOT found")
-    except Exception:
-        print("  Ollama:      NOT running")
-
-    # Config
-    from hanimo_rag.config import get_settings
-    s = get_settings()
-    print(f"  DB URI:      {s.POSTGRES_URI}")
-    print(f"  Embedding:   {s.EMBEDDING_PROVIDER}/{s.EMBEDDING_MODEL}")
-    print(f"  LLM:         {s.LLM_PROVIDER}/{s.LLM_MODEL}")
-    print(f"  Chunk size:  {s.CHUNK_SIZE} (overlap: {s.CHUNK_OVERLAP})")
-
-
-def _find_compose_file():
-    """Find docker-compose.yml in current or parent directories."""
-    from pathlib import Path
-    for name in ["docker-compose.yml", "docker-compose.yaml", "compose.yml"]:
-        # Check current dir
-        p = Path(name)
-        if p.exists():
-            return p
-        # Check hanimo_rag install dir
-        pkg_dir = Path(__file__).parent.parent
-        p = pkg_dir / name
-        if p.exists():
-            return p
-    return None
+    app = create_app(model=args.model, store_path=args.store, store_type=args.store_type)
+    uvicorn.run(app, host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

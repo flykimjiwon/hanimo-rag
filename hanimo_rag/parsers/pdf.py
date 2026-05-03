@@ -1,85 +1,77 @@
-"""PDF parser using pypdf + pdfplumber."""
+"""PDF parser (optional dependency)."""
 from __future__ import annotations
 
-from hanimo_rag.parsers.base import ParsedDocument, ParserBase
+import logging
+from pathlib import Path
+
+from hanimo_rag.parsers.base import ParsedDocument
+
+logger = logging.getLogger(__name__)
 
 
-class PdfParser(ParserBase):
-    """Parse PDF files using pypdf for text and pdfplumber for tables."""
+class PdfParser:
+    """Parse PDF files. Requires pypdf or pdfplumber (install with `pip install hanimo_rag[pdf]`)."""
 
-    def supported_mime_types(self) -> list[str]:
-        return ["application/pdf"]
+    def parse(self, path: str) -> ParsedDocument:
+        p = Path(path)
+        if not p.exists():
+            raise FileNotFoundError(f"File not found: {path}")
 
-    def parse(self, file_path: str) -> ParsedDocument:
+        # Try pdfplumber first (better table extraction)
         try:
-            import pypdf
-            import pdfplumber
-        except ImportError as e:
-            return ParsedDocument(
-                text="",
-                metadata={"error": f"Missing dependency: {e}"},
+            return self._parse_pdfplumber(p)
+        except ImportError:
+            pass
+
+        # Fall back to pypdf
+        try:
+            return self._parse_pypdf(p)
+        except ImportError:
+            raise ImportError(
+                "PDF parsing requires pypdf or pdfplumber. "
+                "Install with: pip install hanimo_rag[pdf]"
             )
+
+    def _parse_pdfplumber(self, path: Path) -> ParsedDocument:
+        import pdfplumber
 
         pages: list[str] = []
-        metadata: dict = {}
-
-        # --- pypdf: metadata + basic text ---
-        try:
-            reader = pypdf.PdfReader(file_path)
-
-            if reader.is_encrypted:
-                return ParsedDocument(
-                    text="",
-                    metadata={"error": "PDF is encrypted", "page_count": 0},
-                )
-
-            info = reader.metadata or {}
-            metadata["page_count"] = len(reader.pages)
-            metadata["title"] = info.get("/Title", "") or ""
-            metadata["author"] = info.get("/Author", "") or ""
-
-        except Exception as exc:
-            return ParsedDocument(
-                text="",
-                metadata={"error": str(exc)},
-            )
-
-        # --- pdfplumber: page text + tables ---
-        try:
-            with pdfplumber.open(file_path) as pdf:
-                for page in pdf.pages:
-                    parts: list[str] = []
-
-                    # Extract plain text
-                    page_text = page.extract_text() or ""
-                    if page_text.strip():
-                        parts.append(page_text)
-
-                    # Extract tables as markdown
-                    for table in page.extract_tables():
-                        if not table:
-                            continue
-                        md_rows: list[str] = []
-                        for i, row in enumerate(table):
-                            cells = [str(c or "") for c in row]
-                            md_rows.append("| " + " | ".join(cells) + " |")
-                            if i == 0:
-                                md_rows.append(
-                                    "| " + " | ".join(["---"] * len(cells)) + " |"
-                                )
-                        parts.append("\n".join(md_rows))
-
-                    pages.append("\n\n".join(parts))
-
-        except Exception as exc:
-            metadata["pdfplumber_error"] = str(exc)
-            # Fall back to pypdf text if pdfplumber fails
-            try:
-                reader = pypdf.PdfReader(file_path)
-                for page in reader.pages:
-                    pages.append(page.extract_text() or "")
-            except Exception:
-                pass
+        with pdfplumber.open(str(path)) as pdf:
+            for page in pdf.pages:
+                text = page.extract_text() or ""
+                if text.strip():
+                    pages.append(text)
 
         full_text = "\n\n".join(pages)
-        return ParsedDocument(text=full_text, metadata=metadata, pages=pages)
+        return ParsedDocument(
+            text=full_text,
+            metadata={
+                "source": str(path),
+                "filename": path.name,
+                "page_count": len(pages),
+                "parser": "pdfplumber",
+            },
+            pages=pages,
+        )
+
+    def _parse_pypdf(self, path: Path) -> ParsedDocument:
+        from pypdf import PdfReader
+
+        reader = PdfReader(str(path))
+        pages: list[str] = []
+        for page in reader.pages:
+            text = page.extract_text() or ""
+            if text.strip():
+                pages.append(text)
+
+        full_text = "\n\n".join(pages)
+        return ParsedDocument(
+            text=full_text,
+            metadata={
+                "source": str(path),
+                "filename": path.name,
+                "page_count": len(pages),
+                "parser": "pypdf",
+            },
+            pages=pages,
+        )

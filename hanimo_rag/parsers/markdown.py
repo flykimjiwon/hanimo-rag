@@ -1,65 +1,54 @@
-"""Markdown parser with YAML frontmatter support."""
+"""Markdown parser with frontmatter extraction."""
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
-from hanimo_rag.parsers.base import ParsedDocument, ParserBase
+from hanimo_rag.parsers.base import ParsedDocument
+from hanimo_rag.parsers.text import TextParser
 
 _FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
-_H2_SPLIT_RE = re.compile(r"(?=^## )", re.MULTILINE)
 
 
-def _parse_frontmatter(content: str) -> tuple[dict, str]:
-    """Extract YAML frontmatter and return (metadata_dict, remaining_content)."""
-    match = _FRONTMATTER_RE.match(content)
-    if not match:
-        return {}, content
+class MarkdownParser:
+    """Parse markdown files, extracting YAML frontmatter as metadata."""
 
-    yaml_text = match.group(1)
-    remaining = content[match.end():]
+    def __init__(self) -> None:
+        self._text_parser = TextParser()
 
-    try:
-        import yaml  # PyYAML is a common stdlib-adjacent dep; use stdlib fallback if absent
-        fm = yaml.safe_load(yaml_text) or {}
-        if not isinstance(fm, dict):
-            fm = {}
-    except Exception:
-        # Minimal key: value parser as fallback
-        fm = {}
-        for line in yaml_text.splitlines():
-            if ":" in line:
-                k, _, v = line.partition(":")
-                fm[k.strip()] = v.strip()
+    def parse(self, path: str) -> ParsedDocument:
+        doc = self._text_parser.parse(path)
+        text = doc.text
+        metadata = dict(doc.metadata)
 
-    return fm, remaining
+        # Extract frontmatter
+        match = _FRONTMATTER_RE.match(text)
+        if match:
+            frontmatter_raw = match.group(1)
+            metadata["frontmatter"] = _parse_simple_yaml(frontmatter_raw)
+            # Remove frontmatter from body text
+            text = text[match.end() :].strip()
+
+        # Extract title from first heading
+        title_match = re.match(r"^#\s+(.+)$", text, re.MULTILINE)
+        if title_match:
+            metadata["title"] = title_match.group(1).strip()
+
+        return ParsedDocument(
+            text=text,
+            metadata=metadata,
+        )
 
 
-class MarkdownParser(ParserBase):
-    """Parse Markdown files, splitting by H2 headings into pages."""
-
-    def supported_mime_types(self) -> list[str]:
-        return ["text/markdown", "text/x-markdown"]
-
-    def parse(self, file_path: str) -> ParsedDocument:
-        try:
-            with open(file_path, encoding="utf-8") as fh:
-                content = fh.read()
-        except UnicodeDecodeError:
-            try:
-                with open(file_path, encoding="latin-1") as fh:
-                    content = fh.read()
-            except Exception as exc:
-                return ParsedDocument(text="", metadata={"error": str(exc)})
-        except Exception as exc:
-            return ParsedDocument(text="", metadata={"error": str(exc)})
-
-        frontmatter, body = _parse_frontmatter(content)
-
-        # Split body into sections at H2 boundaries
-        raw_sections = _H2_SPLIT_RE.split(body)
-        pages = [s.strip() for s in raw_sections if s.strip()]
-
-        full_text = body.strip()
-        metadata: dict = {"frontmatter": frontmatter}
-
-        return ParsedDocument(text=full_text, metadata=metadata, pages=pages)
+def _parse_simple_yaml(raw: str) -> dict[str, str]:
+    """Minimal YAML-like key:value parser (no dependency on PyYAML)."""
+    result: dict[str, str] = {}
+    for line in raw.strip().splitlines():
+        line = line.strip()
+        if ":" in line and not line.startswith("#"):
+            key, _, value = line.partition(":")
+            key = key.strip()
+            value = value.strip().strip("\"'")
+            if key:
+                result[key] = value
+    return result

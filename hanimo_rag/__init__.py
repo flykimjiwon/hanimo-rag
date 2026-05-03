@@ -1,364 +1,108 @@
-"""hanimo_rag — PostgreSQL-native hybrid RAG engine.
+"""HanimoRAG v2 — Agentic LiteRAG engine.
 
-Usage (3 lines):
-    from hanimo_rag import hanimo_rag
-
-    rag = hanimo_rag("postgresql://localhost:5432/hanimo_rag")
-    rag.ingest("report.pdf")
-    answer = rag.ask("매출 현황은?")
+3-line usage:
+    rag = HanimoRAG(model="qwen2.5:7b")
+    await rag.index("./docs/")
+    answer = await rag.ask("How do I configure the database?")
 """
-
-__version__ = "0.1.0"
+from __future__ import annotations
 
 import asyncio
-import mimetypes
-import os
-import uuid
 from pathlib import Path
 
+from hanimo_rag.config import Config
+from hanimo_rag.core.agent import AgenticSearch
+from hanimo_rag.core.indexer import Indexer
+from hanimo_rag.llm import create_llm
+from hanimo_rag.parsers import parse_file
+from hanimo_rag.store import create_store
 
-def _run(coro):
-    """Run async coroutine from sync context."""
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
-
-    if loop and loop.is_running():
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            return pool.submit(asyncio.run, coro).result()
-    else:
-        return asyncio.run(coro)
+__version__ = "2.0.0"
 
 
-class hanimo_rag:
-    """High-level facade for hanimo_rag.
-
-    Makes the entire RAG pipeline accessible in 3 lines of code.
-    Handles DB connection, schema init, embedding, and search automatically.
-
-    Examples:
-        # Basic usage
-        rag = hanimo_rag()
-        rag.ingest("report.pdf")
-        results = rag.search("인증 방법")
-        answer = rag.ask("인증 방법은?")
-
-        # With explicit DB
-        rag = hanimo_rag(db="postgresql://user:pass@host:5432/mydb")
-
-        # With OpenAI embeddings
-        rag = hanimo_rag(embedding_provider="openai", openai_api_key="sk-...")
-
-        # Async usage
-        async with hanimo_rag() as rag:
-            await rag.aingest("report.pdf")
-            answer = await rag.aask("질문")
-    """
+class HanimoRAG:
+    """3-line RAG: init -> index -> ask."""
 
     def __init__(
         self,
-        db: str | None = None,
-        *,
-        embedding_provider: str | None = None,
-        embedding_model: str | None = None,
-        ollama_base_url: str | None = None,
-        openai_api_key: str | None = None,
-        llm_provider: str | None = None,
-        llm_model: str | None = None,
-        chunk_size: int | None = None,
-        chunk_overlap: int | None = None,
-        auto_init: bool = True,
-    ):
-        """Initialize hanimo_rag.
-
-        Args:
-            db: PostgreSQL connection string. Defaults to HANIMO_RAG_POSTGRES_URI env var
-                or postgresql://localhost:5432/hanimo_rag.
-            embedding_provider: "ollama", "openai", or "local". Default: "ollama".
-            embedding_model: Model name. Default depends on provider.
-            ollama_base_url: Ollama server URL. Default: http://localhost:11434.
-            openai_api_key: OpenAI API key (required if provider is "openai").
-            llm_provider: "ollama" or "openai". Default: "ollama".
-            llm_model: LLM model name. Default: "llama3".
-            chunk_size: Text chunk size in characters. Default: 512.
-            chunk_overlap: Overlap between chunks. Default: 51.
-            auto_init: Automatically initialize DB schema on first use. Default: True.
-        """
-        # Set env vars for overrides
-        if db:
-            os.environ["HANIMO_RAG_POSTGRES_URI"] = db
-        if embedding_provider:
-            os.environ["HANIMO_RAG_EMBEDDING_PROVIDER"] = embedding_provider
-        if embedding_model:
-            os.environ["HANIMO_RAG_EMBEDDING_MODEL"] = embedding_model
-        if ollama_base_url:
-            os.environ["HANIMO_RAG_OLLAMA_BASE_URL"] = ollama_base_url
-        if openai_api_key:
-            os.environ["HANIMO_RAG_OPENAI_API_KEY"] = openai_api_key
-        if llm_provider:
-            os.environ["HANIMO_RAG_LLM_PROVIDER"] = llm_provider
-        if llm_model:
-            os.environ["HANIMO_RAG_LLM_MODEL"] = llm_model
-        if chunk_size:
-            os.environ["HANIMO_RAG_CHUNK_SIZE"] = str(chunk_size)
-        if chunk_overlap:
-            os.environ["HANIMO_RAG_CHUNK_OVERLAP"] = str(chunk_overlap)
-
-        self._initialized = False
-        self._auto_init = auto_init
-
-    async def _ensure_init(self):
-        """Initialize DB schema if not done yet."""
-        if not self._initialized and self._auto_init:
-            try:
-                from hanimo_rag.db import init_schema
-                await init_schema()
-                self._initialized = True
-            except Exception as e:
-                raise ConnectionError(
-                    f"PostgreSQL 연결 실패: {e}\n\n"
-                    "해결 방법:\n"
-                    "  1. PostgreSQL이 실행 중인지 확인: docker ps\n"
-                    "  2. Docker로 빠르게 시작: hanimo_rag quickstart\n"
-                    "  3. 직접 시작: docker compose up -d\n"
-                    "  4. DB URI 확인: hanimo_rag(db='postgresql://...')\n"
-                ) from e
-
-    # ─── Sync API (편의용) ──────────────────────────────────
-
-    def ingest(self, file_path: str, collection: str | None = None) -> str:
-        """Upload and process a document. Returns document ID.
-
-        Args:
-            file_path: Path to file (PDF, DOCX, XLSX, PPTX, MD, TXT).
-            collection: Optional collection name to add the document to.
-        """
-        return _run(self.aingest(file_path, collection))
-
-    def search(
-        self,
-        query: str,
-        top_k: int = 5,
-        mode: str = "hybrid",
-        collection: str | None = None,
-    ) -> list[dict]:
-        """Search for relevant document chunks.
-
-        Args:
-            query: Search query text.
-            top_k: Number of results to return.
-            mode: "hybrid" (all 3), "vector" (semantic), "fts" (keyword), "graph" (relations).
-            collection: Optional collection to search within.
-        """
-        return _run(self.asearch(query, top_k, mode, collection))
-
-    def ask(
-        self,
-        question: str,
-        top_k: int = 5,
-        mode: str = "hybrid",
-        collection: str | None = None,
-        stream: bool = False,
-    ) -> str:
-        """Ask a question and get an AI-generated answer based on your documents.
-
-        Args:
-            question: Your question.
-            top_k: Number of context chunks to use.
-            mode: Search mode.
-            collection: Optional collection to search within.
-            stream: If True, prints tokens as they arrive and returns full text.
-        """
-        return _run(self.aask(question, top_k, mode, collection, stream))
-
-    def close(self):
-        """Close database connections."""
-        _run(self.aclose())
-
-    # ─── Async API (프로덕션/서버용) ────────────────────────
-
-    async def aingest(self, file_path: str, collection: str | None = None) -> str:
-        """Async version of ingest()."""
-        await self._ensure_init()
-
-        path = Path(file_path)
-        if not path.exists():
-            raise FileNotFoundError(f"파일을 찾을 수 없습니다: {file_path}")
-
-        mime_type, _ = mimetypes.guess_type(str(path))
-        if not mime_type:
-            mime_type = "application/octet-stream"
-
-        from hanimo_rag.db import execute
-
-        doc_id = str(uuid.uuid4())
-        file_size = path.stat().st_size
-
-        await execute(
-            """INSERT INTO hanimo_rag_documents (id, file_name, original_name, file_size, mime_type, status)
-            VALUES ($1::uuid, $2, $3, $4, $5, 'uploaded')""",
-            doc_id, str(path), path.name, file_size, mime_type,
+        model: str = "qwen2.5:7b",
+        store_path: str = "./hanimo_rag_data",
+        store_type: str = "json",
+        **llm_kwargs: object,
+    ) -> None:
+        self.config = Config(
+            model=model,
+            store_path=store_path,
+            store_type=store_type,
+            **{k: v for k, v in llm_kwargs.items() if hasattr(Config, k)},  # type-safe forwarding
         )
+        self.llm = create_llm(self.config)
+        self.store = create_store(self.config)
+        self.indexer = Indexer(self.llm, self.store)
+        self.search_engine = AgenticSearch(self.llm, self.store)
 
-        from hanimo_rag.core.pipeline import ingest_document
-        await ingest_document(doc_id, str(path), mime_type)
-
-        # Add to collection if specified
-        if collection:
-            await self._ensure_collection(collection, doc_id)
-
-        return doc_id
-
-    async def asearch(
+    async def index(
         self,
-        query: str,
-        top_k: int = 5,
-        mode: str = "hybrid",
-        collection: str | None = None,
-    ) -> list[dict]:
-        """Async version of search()."""
-        await self._ensure_init()
+        path: str,
+        chunk_size: int = 512,
+        chunk_overlap: int = 50,
+    ) -> dict:
+        """Index a file or directory."""
+        p = Path(path)
+        results: list[dict] = []
 
-        from hanimo_rag.config import get_settings
-        from hanimo_rag.core.embedder import get_embedder
-        from hanimo_rag.core.hybrid_search import hybrid_search
-
-        settings = get_settings()
-        embedder = get_embedder(settings)
-        query_embedding = await embedder.embed(query)
-
-        document_ids = None
-        if collection:
-            document_ids = await self._get_collection_doc_ids(collection)
-
-        results = await hybrid_search(
-            query_text=query,
-            query_embedding=query_embedding,
-            top_k=top_k,
-            mode=mode,
-            document_ids=document_ids,
-        )
-
-        return [
-            {
-                "content": r.content,
-                "score": r.score,
-                "file_name": r.original_name or r.file_name,
-                "match_type": r.match_type,
-                "document_id": r.document_id,
-                "chunk_id": r.chunk_id,
-            }
-            for r in results
-        ]
-
-    async def aask(
-        self,
-        question: str,
-        top_k: int = 5,
-        mode: str = "hybrid",
-        collection: str | None = None,
-        stream: bool = False,
-    ) -> str:
-        """Async version of ask()."""
-        await self._ensure_init()
-
-        # 1. Search for context
-        results = await self.asearch(question, top_k, mode, collection)
-
-        if not results:
-            return "관련 문서를 찾을 수 없습니다. 먼저 문서를 업로드해주세요."
-
-        # 2. Build context
-        context_parts = []
-        for i, r in enumerate(results, 1):
-            source = f" ({r['file_name']})" if r.get("file_name") else ""
-            context_parts.append(f"[{i}]{source} {r['content']}")
-        context = "\n\n".join(context_parts)
-
-        # 3. Generate answer
-        from hanimo_rag.config import get_settings
-        from hanimo_rag.core.llm import get_llm
-
-        settings = get_settings()
-        llm = get_llm(settings)
-
-        system_prompt = (
-            "You are a helpful assistant. Answer the user's question based on the provided context. "
-            "If the context doesn't contain enough information, say so. "
-            "Always cite which source [number] you used. Respond in the same language as the question."
-        )
-        user_prompt = f"Context:\n{context}\n\nQuestion: {question}"
-
-        if stream:
-            full_text = ""
-            async for token in llm.generate_stream(system_prompt, user_prompt):
-                print(token, end="", flush=True)
-                full_text += token
-            print()
-            return full_text
+        if p.is_dir():
+            files = sorted(f for f in p.rglob("*") if f.is_file() and not f.name.startswith("."))
         else:
-            return await llm.generate(system_prompt, user_prompt)
+            files = [p]
 
-    async def aclose(self):
-        """Async close database connections."""
-        from hanimo_rag.db import close_pool
-        await close_pool()
-
-    async def _ensure_collection(self, name: str, doc_id: str):
-        """Add document to collection, creating if needed."""
-        from hanimo_rag.db import fetchrow, execute
-
-        row = await fetchrow(
-            "SELECT id FROM hanimo_rag_collections WHERE name = $1", name
-        )
-        if row:
-            coll_id = str(row["id"])
-        else:
-            coll_id = str(uuid.uuid4())
-            await execute(
-                "INSERT INTO hanimo_rag_collections (id, name) VALUES ($1::uuid, $2)",
-                coll_id, name,
+        for f in files:
+            result = await self.indexer.index_file(
+                str(f),
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
             )
+            results.append(result)
 
-        await execute(
-            """INSERT INTO hanimo_rag_collection_documents (collection_id, document_id)
-            VALUES ($1::uuid, $2::uuid) ON CONFLICT DO NOTHING""",
-            coll_id, doc_id,
+        return {"indexed": len(results), "files": results}
+
+    async def search(
+        self,
+        query: str,
+        top_k: int = 5,
+        max_rounds: int = 3,
+    ) -> list[dict]:
+        """Agentic search with LLM routing."""
+        return await self.search_engine.search(query, top_k=top_k, max_rounds=max_rounds)
+
+    async def ask(self, question: str, top_k: int = 5) -> str:
+        """Search + generate answer."""
+        results = await self.search(question, top_k=top_k)
+        if not results:
+            return "No relevant information found."
+
+        context = "\n\n---\n\n".join(r["content"] for r in results)
+        prompt = (
+            f"Based on the following context, answer the question.\n\n"
+            f"Context:\n{context}\n\n"
+            f"Question: {question}\n\n"
+            f"Answer:"
         )
+        return await self.llm.generate(prompt)
 
-    async def _get_collection_doc_ids(self, name: str) -> list[str] | None:
-        """Get document IDs in a collection."""
-        from hanimo_rag.db import fetch
+    # ── Sync wrappers ──────────────────────────────────────────────
 
-        rows = await fetch(
-            """SELECT cd.document_id FROM hanimo_rag_collection_documents cd
-            JOIN hanimo_rag_collections c ON c.id = cd.collection_id
-            WHERE c.name = $1""",
-            name,
-        )
-        if not rows:
-            return None
-        return [str(r["document_id"]) for r in rows]
+    def index_sync(self, path: str, **kwargs: object) -> dict:
+        """Synchronous wrapper for index()."""
+        return asyncio.run(self.index(path, **kwargs))
 
-    # ─── Context Manager ────────────────────────────────────
+    def search_sync(self, query: str, **kwargs: object) -> list[dict]:
+        """Synchronous wrapper for search()."""
+        return asyncio.run(self.search(query, **kwargs))
 
-    async def __aenter__(self):
-        await self._ensure_init()
-        return self
+    def ask_sync(self, question: str, **kwargs: object) -> str:
+        """Synchronous wrapper for ask()."""
+        return asyncio.run(self.ask(question, **kwargs))
 
-    async def __aexit__(self, *args):
-        await self.aclose()
 
-    def __enter__(self):
-        _run(self._ensure_init())
-        return self
-
-    def __exit__(self, *args):
-        self.close()
-
-    def __repr__(self):
-        from hanimo_rag.config import get_settings
-        s = get_settings()
-        return f"hanimo_rag(db='{s.POSTGRES_URI}', embedding='{s.EMBEDDING_PROVIDER}/{s.EMBEDDING_MODEL}')"
+__all__ = ["HanimoRAG", "Config", "parse_file", "__version__"]

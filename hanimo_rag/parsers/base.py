@@ -1,25 +1,17 @@
-"""Base parser interface."""
-from abc import ABC, abstractmethod
+"""Base parser types."""
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 
 
 @dataclass
 class ParsedDocument:
-    """Result of parsing a document."""
+    """Result of parsing a file."""
+
     text: str
     metadata: dict = field(default_factory=dict)
     pages: list[str] = field(default_factory=list)
 
-
-class ParserBase(ABC):
-    """Abstract base for document parsers."""
-
-    @abstractmethod
-    def parse(self, file_path: str) -> ParsedDocument:
-        """Parse a document file and return a ParsedDocument."""
-        ...
-
-    @abstractmethod
-    def supported_mime_types(self) -> list[str]:
-        """Return list of MIME types this parser supports."""
-        ...
+    @property
+    def page_count(self) -> int:
+        return len(self.pages) if self.pages else (1 if self.text else 0)

@@ -1,52 +1,67 @@
-"""Document parsers."""
-from hanimo_rag.parsers.base import ParserBase, ParsedDocument
+"""File parsers for HanimoRAG."""
+from __future__ import annotations
 
-_MIME_MAP: dict[str, type[ParserBase]] = {}
+from pathlib import Path
 
+from hanimo_rag.parsers.base import ParsedDocument
 
-def _register() -> None:
-    from hanimo_rag.parsers.pdf import PdfParser
-    from hanimo_rag.parsers.docx import DocxParser
-    from hanimo_rag.parsers.xlsx import XlsxParser
-    from hanimo_rag.parsers.pptx import PptxParser
-    from hanimo_rag.parsers.markdown import MarkdownParser
-    from hanimo_rag.parsers.text import TextParser
-
-    for cls in [PdfParser, DocxParser, XlsxParser, PptxParser, MarkdownParser, TextParser]:
-        for mime in cls().supported_mime_types():
-            _MIME_MAP[mime] = cls
-
-
-def get_parser(mime_type: str) -> ParserBase:
-    """Return a parser instance for the given MIME type.
-
-    Falls back to TextParser for unknown MIME types.
-    """
-    if not _MIME_MAP:
-        _register()
-    parser_cls = _MIME_MAP.get(mime_type)
-    if parser_cls is None:
-        from hanimo_rag.parsers.text import TextParser
-        return TextParser()
-    return parser_cls()
-
-
-_EXT_TO_MIME: dict[str, str] = {
-    ".txt": "text/plain",
-    ".md": "text/markdown",
-    ".markdown": "text/markdown",
-    ".pdf": "application/pdf",
-    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+_EXTENSION_MAP: dict[str, str] = {
+    ".txt": "text",
+    ".log": "text",
+    ".csv": "text",
+    ".tsv": "text",
+    ".json": "text",
+    ".xml": "text",
+    ".html": "text",
+    ".htm": "text",
+    ".md": "markdown",
+    ".markdown": "markdown",
+    ".mdx": "markdown",
+    ".pdf": "pdf",
+    ".py": "text",
+    ".js": "text",
+    ".ts": "text",
+    ".jsx": "text",
+    ".tsx": "text",
+    ".java": "text",
+    ".go": "text",
+    ".rs": "text",
+    ".c": "text",
+    ".cpp": "text",
+    ".h": "text",
+    ".hpp": "text",
+    ".rb": "text",
+    ".php": "text",
+    ".sh": "text",
+    ".yaml": "text",
+    ".yml": "text",
+    ".toml": "text",
+    ".ini": "text",
+    ".cfg": "text",
+    ".env": "text",
+    ".sql": "text",
+    ".r": "text",
+    ".swift": "text",
+    ".kt": "text",
+    ".scala": "text",
 }
 
 
-def mime_from_extension(filename: str) -> str:
-    """Infer MIME type from file extension. Returns 'application/octet-stream' for unknown."""
-    import os
-    ext = os.path.splitext(filename)[1].lower()
-    return _EXT_TO_MIME.get(ext, "application/octet-stream")
+def parse_file(path: str) -> ParsedDocument:
+    """Parse a file by auto-detecting its type from extension."""
+    p = Path(path)
+    ext = p.suffix.lower()
+    parser_type = _EXTENSION_MAP.get(ext, "text")
 
-
-__all__ = ["ParserBase", "ParsedDocument", "get_parser", "mime_from_extension"]
+    if parser_type == "text":
+        from hanimo_rag.parsers.text import TextParser
+        return TextParser().parse(path)
+    elif parser_type == "markdown":
+        from hanimo_rag.parsers.markdown import MarkdownParser
+        return MarkdownParser().parse(path)
+    elif parser_type == "pdf":
+        from hanimo_rag.parsers.pdf import PdfParser
+        return PdfParser().parse(path)
+    else:
+        from hanimo_rag.parsers.text import TextParser
+        return TextParser().parse(path)

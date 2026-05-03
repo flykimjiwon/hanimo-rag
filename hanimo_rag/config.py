@@ -1,59 +1,66 @@
-"""Configuration management using pydantic-settings."""
+"""Configuration for HanimoRAG."""
+from __future__ import annotations
 
-from functools import lru_cache
+import os
+from dataclasses import dataclass, field
 
-from pydantic_settings import BaseSettings
+_KNOWN_PROVIDERS = {"ollama", "openai"}
 
 
-class Settings(BaseSettings):
-    """hanimo_rag configuration via environment variables.
+@dataclass
+class Config:
+    """HanimoRAG configuration.
 
-    All settings can be set via environment variables with HANIMO_RAG_ prefix.
-    Example: HANIMO_RAG_POSTGRES_URI=postgresql://... HANIMO_RAG_EMBEDDING_PROVIDER=local
+    Model string format:
+        - "qwen2.5:7b"              -> provider=ollama, model=qwen2.5:7b
+        - "ollama:qwen2.5:7b"       -> provider=ollama, model=qwen2.5:7b
+        - "openai:gpt-4o-mini"      -> provider=openai, model=gpt-4o-mini
     """
 
-    # Database
-    POSTGRES_URI: str = "postgresql://localhost:5432/hanimo_rag"
+    model: str = "qwen2.5:7b"
+    store_path: str = "./hanimo_rag_data"
+    store_type: str = "json"  # "json" or "sqlite"
 
-    # API Authentication
-    API_KEYS: str = ""  # Comma-separated list of valid API keys
+    # LLM settings
+    llm_provider: str = ""
+    ollama_base_url: str = "http://localhost:11434"
+    openai_api_key: str = ""
+    openai_base_url: str = "https://api.openai.com/v1"
+    temperature: float = 0.1
+    max_tokens: int = 2048
 
-    # Embedding
-    EMBEDDING_PROVIDER: str = "ollama"  # "ollama", "openai", or "local"
-    EMBEDDING_MODEL: str = "nomic-embed-text"
-    EMBEDDING_DIMENSIONS: int = 768
-    OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OPENAI_API_KEY: str = ""
+    # Parsed after init
+    _resolved_provider: str = field(default="", init=False, repr=False)
+    _resolved_model: str = field(default="", init=False, repr=False)
 
-    # Chunking
-    CHUNK_SIZE: int = 512
-    CHUNK_OVERLAP: int = 51
+    def __post_init__(self) -> None:
+        self._parse_model_string()
+        # Pick up env vars as fallbacks
+        if not self.openai_api_key:
+            self.openai_api_key = os.environ.get("OPENAI_API_KEY", "")
+        if not self.ollama_base_url or self.ollama_base_url == "http://localhost:11434":
+            self.ollama_base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 
-    # Search
-    SIMILARITY_TOP_K: int = 5
-    SIMILARITY_THRESHOLD: float = 0.7
+    def _parse_model_string(self) -> None:
+        """Parse 'provider:model' or just 'model'."""
+        if self.llm_provider:
+            self._resolved_provider = self.llm_provider
+            self._resolved_model = self.model
+            return
 
-    # LLM Generation
-    LLM_PROVIDER: str = "ollama"  # "ollama" or "openai"
-    LLM_MODEL: str = "llama3"
-    LLM_TEMPERATURE: float = 0.1
-    LLM_MAX_TOKENS: int = 2048
-    ENABLE_HYDE: bool = False
-
-    model_config = {"env_prefix": "HANIMO_RAG_", "env_file": ".env", "extra": "ignore"}
+        parts = self.model.split(":", 1)
+        if len(parts) == 2 and parts[0].lower() in _KNOWN_PROVIDERS:
+            self._resolved_provider = parts[0].lower()
+            self._resolved_model = parts[1]
+        else:
+            # Default to ollama for unknown provider prefixes
+            self._resolved_provider = "ollama"
+            self._resolved_model = self.model
 
     @property
-    def parsed_api_keys(self) -> list[str]:
-        """Parse comma-separated API keys and strip whitespace."""
-        return [k.strip() for k in self.API_KEYS.split(",") if k.strip()]
+    def provider(self) -> str:
+        return self._resolved_provider
 
-
-@lru_cache()
-def get_settings() -> Settings:
-    """Get cached settings instance. Call clear_settings() to reload."""
-    return Settings()
-
-
-def clear_settings():
-    """Clear cached settings (forces reload on next get_settings() call)."""
-    get_settings.cache_clear()
+    @property
+    def model_name(self) -> str:
+        return self._resolved_model
