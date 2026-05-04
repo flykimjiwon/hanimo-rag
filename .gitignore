@@ -86,3 +86,6 @@ postgres-data/
 
 # Jupyter
 .ipynb_checkpoints/
+
+# OMC runtime state (regenerated each session)
+.omc/
