@@ -89,3 +89,4 @@ postgres-data/
 
 # OMC runtime state (regenerated each session)
 .omc/
+.claude/settings.local.json
